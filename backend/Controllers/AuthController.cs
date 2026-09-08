@@ -14,11 +14,13 @@ namespace backend.Controllers
     public class AuthController : ControllerBase
     {
         private readonly AppDbContext _context;
-        private readonly string jwtKey = "APP2026_SECRET_KEY_LOGIN_JWT_123456789";
+        private readonly string jwtKey;
 
         public AuthController(AppDbContext context)
         {
             _context = context;
+            jwtKey = Environment.GetEnvironmentVariable("JWT_KEY")
+                ?? "APP2026_SECRET_KEY_LOGIN_JWT_123456789";
         }
 
         [HttpPost("login")]
