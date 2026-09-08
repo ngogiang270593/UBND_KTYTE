@@ -123,7 +123,16 @@ using (var scope = app.Services.CreateScope())
 
     if (db.Database.IsNpgsql())
     {
-        db.Database.ExecuteSqlRaw("ALTER TABLE \"Customers\" ADD COLUMN IF NOT EXISTS \"Phone\" text NOT NULL DEFAULT '';");
+        db.Database.ExecuteSqlRaw("""
+            ALTER TABLE "Customers" ADD COLUMN IF NOT EXISTS "Phone" text NOT NULL DEFAULT '';
+            ALTER TABLE "Customers" ADD COLUMN IF NOT EXISTS "ObjectType" text NOT NULL DEFAULT '';
+            ALTER TABLE "Customers" ADD COLUMN IF NOT EXISTS "PhoneNumber" text NOT NULL DEFAULT '';
+            ALTER TABLE "Customers" ADD COLUMN IF NOT EXISTS "Address" text NOT NULL DEFAULT '';
+            ALTER TABLE "Customers" ADD COLUMN IF NOT EXISTS "Email" text NOT NULL DEFAULT '';
+            ALTER TABLE "Customers" ADD COLUMN IF NOT EXISTS "TaxCode" text NOT NULL DEFAULT '';
+            ALTER TABLE "Customers" ADD COLUMN IF NOT EXISTS "ExaminationDate" timestamp without time zone NOT NULL DEFAULT TIMESTAMP '0001-01-01 00:00:00';
+            ALTER TABLE "Customers" ADD COLUMN IF NOT EXISTS "BirthDate" timestamp without time zone NULL;
+            """);
         db.Database.ExecuteSqlRaw("""
             CREATE OR REPLACE FUNCTION unicode_lower(value text)
             RETURNS text LANGUAGE sql IMMUTABLE PARALLEL SAFE
