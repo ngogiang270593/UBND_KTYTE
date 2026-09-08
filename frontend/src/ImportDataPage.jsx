@@ -659,11 +659,11 @@ function ImportDataPage() {
 
     try {
       const res = await api.delete("/ImportData/customer-rows", {
-        params: buildSearchParams(searchForm),
+        params: {},
       });
 
       const verifyRes = await api.get("/ImportData/customer-rows", {
-        params: buildSearchParams(searchForm),
+        params: {},
       });
       setSavedRows(Array.isArray(verifyRes.data) ? verifyRes.data : []);
 

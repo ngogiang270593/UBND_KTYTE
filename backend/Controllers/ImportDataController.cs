@@ -238,6 +238,7 @@ namespace backend.Controllers
                     Name = name,
                     ObjectType = objectType,
                     PhoneNumber = phoneNumber,
+                    LegacyPhone = phoneNumber,
                     TaxCode = birthYear,
                     BirthDate = birthDate,
                     ExaminationDate = row.ExaminationDate!.Value.Date,
@@ -256,12 +257,22 @@ namespace backend.Controllers
                 {
                     await _context.SaveChangesAsync();
                 }
-                catch (DbUpdateException)
+                catch (DbUpdateException exception)
                 {
-                    return Conflict(new
+                    var databaseMessage = exception.InnerException?.Message ?? exception.Message;
+                    if (databaseMessage.Contains("UNIQUE", StringComparison.OrdinalIgnoreCase)
+                        || databaseMessage.Contains("duplicate", StringComparison.OrdinalIgnoreCase))
                     {
-                        message =
-                            "Không thể lưu vì có Căn cước bị trùng trong cơ sở dữ liệu. Vui lòng tải lại danh sách và thử lại."
+                        return Conflict(new
+                        {
+                            message =
+                                "Không thể lưu vì có Căn cước bị trùng trong cơ sở dữ liệu. Vui lòng tải lại danh sách và thử lại."
+                        });
+                    }
+
+                    return StatusCode(StatusCodes.Status500InternalServerError, new
+                    {
+                        message = "Không thể lưu dữ liệu do cấu trúc cơ sở dữ liệu chưa tương thích. Vui lòng khởi động lại API rồi thử lại."
                     });
                 }
             }

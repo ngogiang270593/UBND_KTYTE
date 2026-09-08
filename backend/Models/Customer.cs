@@ -1,6 +1,7 @@
 using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 
 namespace backend.Models
 {
@@ -17,6 +18,10 @@ namespace backend.Models
         public string ObjectType { get; set; } = string.Empty;
 
         public string PhoneNumber { get; set; } = string.Empty;
+
+        [JsonIgnore]
+        [Column("Phone")]
+        public string LegacyPhone { get; set; } = string.Empty;
 
         public string Address { get; set; } = string.Empty;
 
