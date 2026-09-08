@@ -110,7 +110,7 @@ using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     var sqliteImportPath = Environment.GetEnvironmentVariable("IMPORT_SQLITE_PATH");
-    if (db.Database.IsNpgsql() && !string.IsNullOrWhiteSpace(sqliteImportPath))
+    if (db.Database.IsNpgsql())
     {
         var schemaScript = db.Database.GenerateCreateScript()
             .Replace("CREATE TABLE \"", "CREATE TABLE IF NOT EXISTS \"")
