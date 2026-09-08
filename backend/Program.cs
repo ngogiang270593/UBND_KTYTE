@@ -190,6 +190,30 @@ using (var scope = app.Services.CreateScope())
         }
     }
 
+    using (var command = db.Database.GetDbConnection().CreateCommand())
+    {
+        command.CommandText = "PRAGMA table_info('Customers');";
+        db.Database.OpenConnection();
+        var hasObjectTypeColumn = false;
+        using (var reader = command.ExecuteReader())
+        {
+            while (reader.Read())
+            {
+                if (string.Equals(reader.GetString(1), "ObjectType", StringComparison.OrdinalIgnoreCase))
+                {
+                    hasObjectTypeColumn = true;
+                    break;
+                }
+            }
+        }
+        db.Database.CloseConnection();
+
+        if (!hasObjectTypeColumn)
+        {
+            db.Database.ExecuteSqlRaw("ALTER TABLE Customers ADD COLUMN ObjectType TEXT NOT NULL DEFAULT '';");
+        }
+    }
+
     db.Database.ExecuteSqlRaw(@"CREATE TABLE IF NOT EXISTS CatalogItems (
         Id INTEGER NOT NULL CONSTRAINT PK_CatalogItems PRIMARY KEY AUTOINCREMENT,
         Category TEXT NOT NULL,
