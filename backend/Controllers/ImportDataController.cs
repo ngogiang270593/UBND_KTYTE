@@ -32,10 +32,12 @@ namespace backend.Controllers
     public class ImportDataController : ControllerBase
     {
         private readonly AppDbContext _context;
+        private readonly ILogger<ImportDataController> _logger;
 
-        public ImportDataController(AppDbContext context)
+        public ImportDataController(AppDbContext context, ILogger<ImportDataController> logger)
         {
             _context = context;
+            _logger = logger;
         }
 
         // GET: api/ImportData/customer-rows
@@ -260,6 +262,7 @@ namespace backend.Controllers
                 catch (DbUpdateException exception)
                 {
                     var databaseMessage = exception.InnerException?.Message ?? exception.Message;
+                    _logger.LogError(exception, "Health import database save failed: {DatabaseMessage}", databaseMessage);
                     if (databaseMessage.Contains("UNIQUE", StringComparison.OrdinalIgnoreCase)
                         || databaseMessage.Contains("duplicate", StringComparison.OrdinalIgnoreCase))
                     {
