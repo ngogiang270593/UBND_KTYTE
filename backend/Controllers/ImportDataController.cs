@@ -84,11 +84,13 @@ namespace backend.Controllers
                 });
             }
 
-            var existingCodes = await _context.Customers
+            var existingCodes = (await _context.Customers
                 .AsNoTracking()
                 .Where(x => x.Code != null)
-                .Select(x => x.Code.Trim())
-                .ToListAsync();
+                .Select(x => x.Code)
+                .ToListAsync())
+                .Select(NormalizeCitizenCode)
+                .Where(x => x.Length > 0);
 
             var existingCodeSet = existingCodes.ToHashSet(
                 StringComparer.OrdinalIgnoreCase
@@ -133,7 +135,7 @@ namespace backend.Controllers
                 // Nếu không có thì mới dùng giá trị dự phòng.
                 var excelLine = row.ExcelLine ?? (i + 6);
 
-                var code = (row.Code ?? string.Empty).Trim();
+                var code = NormalizeCitizenCode(row.Code);
                 var name = (row.Name ?? string.Empty).Trim();
                 var objectType = (row.ObjectType ?? string.Empty).Trim();
                 var phoneNumber = (row.PhoneNumber ?? string.Empty).Trim();
@@ -394,6 +396,12 @@ namespace backend.Controllers
             }
 
             return query;
+        }
+
+        private static string NormalizeCitizenCode(string? value)
+        {
+            var digits = new string((value ?? string.Empty).Where(char.IsDigit).ToArray());
+            return digits.Length == 11 ? $"0{digits}" : digits;
         }
 
         private static string BuildNameBirthDateKey(string? name, DateTime birthDate)

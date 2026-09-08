@@ -28,6 +28,11 @@ function ImportDataPage() {
 
   const normalizeText = (value) => String(value ?? "").trim();
 
+  const normalizeCitizenCode = (value) => {
+    const digits = normalizeText(value).replace(/\D/g, "");
+    return digits.length === 11 ? `0${digits}` : digits;
+  };
+
   const normalizeHeader = (value) =>
     normalizeText(value)
       .normalize("NFD")
@@ -274,7 +279,7 @@ function ImportDataPage() {
 
     return dataRows.map((row, index) => {
       const errors = [];
-      const codeKey = row.code.toLowerCase();
+      const codeKey = normalizeCitizenCode(row.code);
 
       if (!row.name) errors.push("Thiếu Họ và tên");
 
@@ -467,7 +472,7 @@ function ImportDataPage() {
                 ? normalizeText(cells[columnMap.stt])
                 : "",
 
-            code: normalizeText(cells[columnMap.code]),
+            code: normalizeCitizenCode(cells[columnMap.code]),
             name: normalizeText(cells[columnMap.name]),
 
             objectType: columnMap.objectType !== undefined
