@@ -59,8 +59,6 @@ function CustomerPage() {
   });
 
   const codeInputRef = useRef(null);
-  const tableScrollRef = useRef(null);
-  const horizontalScrollbarRef = useRef(null);
 
   const searchableCustomers = useMemo(
     () =>
@@ -129,17 +127,6 @@ function CustomerPage() {
 
   const focusFirstInput = () => {
     requestAnimationFrame(() => codeInputRef.current?.focus());
-  };
-
-  const syncHorizontalScroll = (event, targetRef) => {
-    const scrollLeft = event.currentTarget.scrollLeft;
-
-    if (
-      targetRef.current &&
-      targetRef.current.scrollLeft !== scrollLeft
-    ) {
-      targetRef.current.scrollLeft = scrollLeft;
-    }
   };
 
   const loadCustomers = async () => {
@@ -1113,51 +1100,29 @@ function CustomerPage() {
             </div>
           </div>
 
-          {/* THANH CUỘN NGANG */}
           <div
-            ref={
-              horizontalScrollbarRef
-            }
-            onScroll={(event) =>
-              syncHorizontalScroll(
-                event,
-                tableScrollRef
-              )
-            }
-            aria-label="Thanh cuộn ngang bảng danh sách"
+            className="d-flex align-items-center justify-content-between gap-3 mb-3 px-3 py-3"
             style={{
-              overflowX:
-                "auto",
-              overflowY:
-                "hidden",
-              height: "22px",
-              margin:
-                "0 2px 8px",
-              cursor:
-                "grab",
+              background: "linear-gradient(135deg, #fff7ed, #ffedd5)",
+              border: "1px solid #fed7aa",
+              borderRadius: "14px",
             }}
           >
-            <div
-              style={{
-                width:
-                  "900px",
-                height: "1px",
-              }}
-            />
+            <div>
+              <div className="small fw-semibold text-uppercase" style={{ color: "#9a3412", letterSpacing: "0.04em" }}>
+                Thống kê hôm nay
+              </div>
+              <div className="fw-semibold text-dark">Tổng hồ sơ khám trong ngày</div>
+            </div>
+            <div className="d-flex align-items-baseline gap-2" style={{ color: "#c2410c" }}>
+              <strong style={{ fontSize: "2rem", lineHeight: 1 }}>{todayExaminationCount}</strong>
+              <span className="fw-semibold">hồ sơ</span>
+            </div>
           </div>
 
           {/* BẢNG */}
           <div
             className="table-responsive"
-            ref={
-              tableScrollRef
-            }
-            onScroll={(event) =>
-              syncHorizontalScroll(
-                event,
-                horizontalScrollbarRef
-              )
-            }
             style={{
               background:
                 "#edf2f7",
@@ -1165,24 +1130,24 @@ function CustomerPage() {
               borderRadius:
                 "14px",
               overflowX:
-                "auto",
+                "hidden",
               overflowY:
                 "hidden",
-              scrollbarWidth:
-                "auto",
               paddingBottom:
-                "18px",
+                "8px",
             }}
           >
             <table
               className="table table-bordered table-hover align-middle mb-0"
               style={{
+                width:
+                  "100%",
+                tableLayout:
+                  "fixed",
                 fontSize:
                   "14px",
                 background:
                   "#f8fafc",
-                minWidth:
-                  "900px",
               }}
             >
               <thead>
@@ -1231,28 +1196,7 @@ function CustomerPage() {
                   </th>
 
                   <th>
-                    <div className="d-flex align-items-center justify-content-between gap-2">
-                      <span>
-                        Thông tin người khám
-                      </span>
-
-                      <span
-                        className="badge rounded-pill fw-semibold"
-                        style={{
-                          background:
-                            "#ecfeff",
-                          color:
-                            "#0c4a6e",
-                          fontSize:
-                            "13px",
-                        }}
-                      >
-                        Tổng khám hôm nay:{" "}
-                        {
-                          todayExaminationCount
-                        }
-                      </span>
-                    </div>
+                    Thông tin người khám
                   </th>
                 </tr>
               </thead>
