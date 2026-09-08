@@ -34,6 +34,17 @@ if (!string.IsNullOrWhiteSpace(postgresConnectionString)
         SslMode = SslMode.Require,
     }.ConnectionString;
 }
+if (!string.IsNullOrWhiteSpace(postgresConnectionString))
+{
+    var connectionBuilder = new NpgsqlConnectionStringBuilder(postgresConnectionString)
+    {
+        Timeout = 30,
+        CommandTimeout = 120,
+        KeepAlive = 30,
+        MaxPoolSize = 10,
+    };
+    postgresConnectionString = connectionBuilder.ConnectionString;
+}
 var usePostgres = !string.IsNullOrWhiteSpace(postgresConnectionString);
 var dataDirectory = Environment.GetEnvironmentVariable("UBND_KTYTE_DATA_DIR");
 if (string.IsNullOrWhiteSpace(dataDirectory))
@@ -53,7 +64,11 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 {
     if (usePostgres)
     {
-        options.UseNpgsql(postgresConnectionString);
+        options.UseNpgsql(postgresConnectionString, npgsqlOptions =>
+            npgsqlOptions.EnableRetryOnFailure(
+                maxRetryCount: 5,
+                maxRetryDelay: TimeSpan.FromSeconds(10),
+                errorCodesToAdd: null));
     }
     else
     {
@@ -94,7 +109,36 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    db.Database.EnsureCreated();
+    var sqliteImportPath = Environment.GetEnvironmentVariable("IMPORT_SQLITE_PATH");
+    if (db.Database.IsNpgsql() && !string.IsNullOrWhiteSpace(sqliteImportPath))
+    {
+        var schemaScript = db.Database.GenerateCreateScript()
+            .Replace("CREATE TABLE \"", "CREATE TABLE IF NOT EXISTS \"")
+            .Replace("CREATE UNIQUE INDEX \"", "CREATE UNIQUE INDEX IF NOT EXISTS \"")
+            .Replace("CREATE INDEX \"", "CREATE INDEX IF NOT EXISTS \"");
+        db.Database.ExecuteSqlRaw(schemaScript);
+    }
+    else
+        db.Database.EnsureCreated();
+
+    if (db.Database.IsNpgsql())
+    {
+        db.Database.ExecuteSqlRaw("""
+            CREATE OR REPLACE FUNCTION unicode_lower(value text)
+            RETURNS text LANGUAGE sql IMMUTABLE PARALLEL SAFE
+            AS 'SELECT lower(value);';
+            """);
+
+        sqliteImportPath = Environment.GetEnvironmentVariable("IMPORT_SQLITE_PATH");
+        if (!string.IsNullOrWhiteSpace(sqliteImportPath))
+        {
+            await SqliteToPostgresImporter.ImportAsync(
+                sqliteImportPath,
+                db,
+                scope.ServiceProvider.GetRequiredService<ILoggerFactory>()
+                    .CreateLogger("SqliteToPostgresImporter"));
+        }
+    }
 
     if (db.Database.IsSqlite())
     {
