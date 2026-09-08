@@ -1,0 +1,25 @@
+services:
+  - type: web
+    name: ubnd-ktyte-api
+    runtime: docker
+    rootDir: backend
+    plan: free
+    envVars:
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+      - key: ASPNETCORE_URLS
+        value: http://0.0.0.0:10000
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_KEY
+        generateValue: true
+
+  - type: static
+    name: ubnd-ktyte-web
+    rootDir: frontend
+    buildCommand: npm ci && npm run build
+    staticPublishPath: dist
+    plan: free
+    envVars:
+      - key: VITE_API_BASE_URL
+        value: https://ubnd-ktyte-api.onrender.com/api

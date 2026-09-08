@@ -12,8 +12,12 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Logging.ClearProviders();
 builder.Logging.AddConsole();
 
-var jwtKey = "APP2026_SECRET_KEY_LOGIN_JWT_123456789";
+var jwtKey = Environment.GetEnvironmentVariable("JWT_KEY")
+    ?? "APP2026_SECRET_KEY_LOGIN_JWT_123456789";
 
+var postgresConnectionString = Environment.GetEnvironmentVariable("DATABASE_URL")
+    ?? Environment.GetEnvironmentVariable("SUPABASE_CONNECTION_STRING");
+var usePostgres = !string.IsNullOrWhiteSpace(postgresConnectionString);
 var dataDirectory = Environment.GetEnvironmentVariable("UBND_KTYTE_DATA_DIR");
 if (string.IsNullOrWhiteSpace(dataDirectory))
 {
@@ -30,12 +34,19 @@ builder.Services.AddControllers();
 
 builder.Services.AddDbContext<AppDbContext>(options =>
 {
-    var connection = new SqliteConnection($"Data Source={databasePath}");
-    connection.CreateFunction<string, string>(
-        "unicode_lower",
-        value => value?.ToLowerInvariant() ?? string.Empty
-    );
-    options.UseSqlite(connection, contextOwnsConnection: true);
+    if (usePostgres)
+    {
+        options.UseNpgsql(postgresConnectionString);
+    }
+    else
+    {
+        var connection = new SqliteConnection($"Data Source={databasePath}");
+        connection.CreateFunction<string, string>(
+            "unicode_lower",
+            value => value?.ToLowerInvariant() ?? string.Empty
+        );
+        options.UseSqlite(connection, contextOwnsConnection: true);
+    }
 });
 
 builder.Services.AddCors(options =>
@@ -68,6 +79,8 @@ using (var scope = app.Services.CreateScope())
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     db.Database.EnsureCreated();
 
+    if (db.Database.IsSqlite())
+    {
     using (var command = db.Database.GetDbConnection().CreateCommand())
     {
         command.CommandText = "PRAGMA table_info('Customers');";
@@ -222,6 +235,8 @@ using (var scope = app.Services.CreateScope())
         }
     }
     db.Database.ExecuteSqlRaw("CREATE UNIQUE INDEX IF NOT EXISTS IX_CampaignHamletStats_HamletId ON CampaignHamletStats (HamletId);");
+    }
+
     db.CatalogItems.Where(x => x.Category == "address").ExecuteDelete();
 
     var catalogDefaults = new Dictionary<string, string[]>

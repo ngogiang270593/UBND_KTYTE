@@ -7,7 +7,7 @@ namespace backend.Data
     {
         [DbFunction("unicode_lower", IsBuiltIn = true)]
         public static string UnicodeLower(string value)
-            => throw new NotSupportedException("Chỉ dùng trong truy vấn SQLite.");
+            => throw new NotSupportedException("Chỉ dùng trong truy vấn cơ sở dữ liệu.");
 
         public AppDbContext(DbContextOptions<AppDbContext> options)
             : base(options)
