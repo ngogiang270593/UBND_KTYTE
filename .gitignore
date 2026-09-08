@@ -1,0 +1,10 @@
+.tools/
+.data/
+node_modules/
+frontend/node_modules/
+frontend/dist/
+backend/bin/
+backend/obj/
+backend/build-check/
+backend/app2026.db*
+*.log

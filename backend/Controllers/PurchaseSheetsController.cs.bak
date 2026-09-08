@@ -1,0 +1,177 @@
+using backend.Data;
+using backend.Models;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+
+namespace backend.Controllers
+{
+    //[Authorize]
+    [ApiController]
+    [Route("api/[controller]")]
+    public class PurchaseSheetsController : ControllerBase
+    {
+        private readonly AppDbContext _context;
+
+        public PurchaseSheetsController(AppDbContext context)
+        {
+            _context = context;
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetAll()
+        {
+            var data = await _context.PurchaseSheets
+                .Include(x => x.Customer)
+                .Include(x => x.Details)
+                .OrderByDescending(x => x.Id)
+                .ToListAsync();
+
+            return Ok(data);
+        }
+
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetById(int id)
+        {
+            var data = await _context.PurchaseSheets
+                .Include(x => x.Customer)
+                .Include(x => x.Details)
+                .FirstOrDefaultAsync(x => x.Id == id);
+
+            if (data == null) return NotFound();
+
+            return Ok(data);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Create(CreatePurchaseSheetRequest request)
+        {
+            var sheet = new PurchaseSheet
+            {
+                CustomerId = request.CustomerId,
+                SheetNo = request.SheetNo,
+                FromDate = request.FromDate,
+                ToDate = request.ToDate,
+                TotalAmount = 0
+            };
+
+            _context.PurchaseSheets.Add(sheet);
+            await _context.SaveChangesAsync();
+
+            return Ok(sheet);
+        }
+
+        [HttpPost("{sheetId}/details")]
+        public async Task<IActionResult> AddDetail(int sheetId, CreatePurchaseSheetDetailRequest request)
+        {
+            var sheet = await _context.PurchaseSheets
+                .Include(x => x.Details)
+                .FirstOrDefaultAsync(x => x.Id == sheetId);
+
+            if (sheet == null) return NotFound("Không thấy bảng kê");
+
+            var waterAmount = request.QkKg * request.WaterPrice;
+            var scrapAmount = request.ScrapKg * request.ScrapPrice;
+            var totalAmount = waterAmount + scrapAmount;
+
+            var detail = new PurchaseSheetDetail
+            {
+                PurchaseSheetId = sheetId,
+                Date = request.Date,
+
+                WaterKg = request.WaterKg,
+                Tcs = request.Tcs,
+                QkKg = request.QkKg,
+                WaterPrice = request.WaterPrice,
+                WaterAmount = waterAmount,
+
+                ScrapKg = request.ScrapKg,
+                ScrapPrice = request.ScrapPrice,
+                ScrapAmount = scrapAmount,
+
+                TotalAmount = totalAmount
+            };
+
+            _context.PurchaseSheetDetails.Add(detail);
+
+            sheet.TotalAmount += totalAmount;
+
+            await _context.SaveChangesAsync();
+
+            return Ok(new
+            {
+                detail.Id,
+                detail.PurchaseSheetId,
+                detail.Date,
+                detail.WaterKg,
+                detail.Tcs,
+                detail.QkKg,
+                detail.WaterPrice,
+                detail.WaterAmount,
+                detail.ScrapKg,
+                detail.ScrapPrice,
+                detail.ScrapAmount,
+                detail.TotalAmount
+            });
+        }
+
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteSheet(int id)
+        {
+            var sheet = await _context.PurchaseSheets
+                .Include(x => x.Details)
+                .FirstOrDefaultAsync(x => x.Id == id);
+
+            if (sheet == null) return NotFound();
+
+            _context.PurchaseSheetDetails.RemoveRange(sheet.Details);
+            _context.PurchaseSheets.Remove(sheet);
+
+            await _context.SaveChangesAsync();
+
+            return Ok();
+        }
+
+        [HttpDelete("details/{detailId}")]
+        public async Task<IActionResult> DeleteDetail(int detailId)
+        {
+            var detail = await _context.PurchaseSheetDetails
+                .FirstOrDefaultAsync(x => x.Id == detailId);
+
+            if (detail == null) return NotFound();
+
+            var sheet = await _context.PurchaseSheets.FindAsync(detail.PurchaseSheetId);
+
+            if (sheet != null)
+            {
+                sheet.TotalAmount -= detail.TotalAmount;
+            }
+
+            _context.PurchaseSheetDetails.Remove(detail);
+            await _context.SaveChangesAsync();
+
+            return Ok();
+        }
+    }
+
+    public class CreatePurchaseSheetRequest
+    {
+        public int CustomerId { get; set; }
+        public string SheetNo { get; set; } = "";
+        public DateTime FromDate { get; set; }
+        public DateTime ToDate { get; set; }
+    }
+
+    public class CreatePurchaseSheetDetailRequest
+    {
+        public DateTime Date { get; set; }
+
+        public decimal WaterKg { get; set; }
+        public decimal Tcs { get; set; }
+        public decimal QkKg { get; set; }
+        public decimal WaterPrice { get; set; }
+
+        public decimal ScrapKg { get; set; }
+        public decimal ScrapPrice { get; set; }
+    }
+}

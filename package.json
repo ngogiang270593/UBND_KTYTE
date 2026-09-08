@@ -1,0 +1,51 @@
+{
+  "dependencies": {
+    "@tailwindcss/vite": "^4.3.0",
+    "tailwindcss": "^4.3.0"
+  },
+  "name": "UBND_KTYTE",
+  "version": "1.1.0",
+  "description": "",
+  "main": "main.js",
+  "devDependencies": {
+    "concurrently": "^10.0.0",
+    "electron": "^37.2.0",
+    "electron-builder": "^26.8.1",
+    "wait-on": "^9.0.10"
+  },
+  "scripts": {
+    "electron": "electron .",
+    "build-app": "electron-builder"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "build": {
+    "appId": "com.UBND_KTYTE.desktop",
+    "productName": "UBND_KTYTE",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "main.js",
+      "package.json",
+      "frontend/dist/**/*"
+    ],
+    "extraResources": [
+      {
+        "from": "publish/backend",
+        "to": "backend"
+      }
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "build/icon.ico"
+    },
+    "nsis": {
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico",
+      "installerHeaderIcon": "build/icon.ico"
+    }
+  }
+}

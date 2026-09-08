@@ -1,0 +1,31 @@
+{
+  "name": "UBND_KTYTE",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:1-22-bookworm",
+  "features": {
+    "ghcr.io/devcontainers/features/dotnet:2": {
+      "version": "8.0"
+    }
+  },
+  "forwardPorts": [5173, 5022],
+  "portsAttributes": {
+    "5173": {
+      "label": "Frontend",
+      "onAutoForward": "openBrowser"
+    },
+    "5022": {
+      "label": "Backend API / Swagger",
+      "onAutoForward": "notify"
+    }
+  },
+  "postCreateCommand": "npm install --prefix frontend && dotnet restore backend/backend.csproj",
+  "postStartCommand": "bash .devcontainer/start-dev.sh",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-dotnettools.csdevkit",
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode"
+      ]
+    }
+  }
+}

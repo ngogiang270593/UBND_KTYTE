@@ -1,0 +1,9 @@
+{
+  "terminal.integrated.env.windows": {
+    "PATH": "${workspaceFolder}\\.tools\\node;${workspaceFolder}\\.tools\\dotnet;${env:PATH}",
+    "DOTNET_CLI_HOME": "${workspaceFolder}\\.tools\\dotnet-home",
+    "NUGET_PACKAGES": "${workspaceFolder}\\.tools\\nuget",
+    "npm_config_cache": "${workspaceFolder}\\.tools\\npm-cache",
+    "DOTNET_CLI_TELEMETRY_OPTOUT": "1"
+  }
+}
