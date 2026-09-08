@@ -242,8 +242,12 @@ namespace backend.Controllers
                     PhoneNumber = phoneNumber,
                     LegacyPhone = phoneNumber,
                     TaxCode = birthYear,
-                    BirthDate = birthDate,
-                    ExaminationDate = row.ExaminationDate!.Value.Date,
+                    BirthDate = birthDate.HasValue
+                        ? DateTime.SpecifyKind(birthDate.Value.Date, DateTimeKind.Utc)
+                        : null,
+                    ExaminationDate = DateTime.SpecifyKind(
+                        row.ExaminationDate!.Value.Date,
+                        DateTimeKind.Utc),
                     Address = address,
                     Occupation = occupation
                 });
@@ -380,12 +384,14 @@ namespace backend.Controllers
 
             if (fromDate.HasValue)
             {
-                query = query.Where(x => x.ExaminationDate.Date >= fromDate.Value.Date);
+                var utcFromDate = DateTime.SpecifyKind(fromDate.Value.Date, DateTimeKind.Utc);
+                query = query.Where(x => x.ExaminationDate.Date >= utcFromDate.Date);
             }
 
             if (toDate.HasValue)
             {
-                query = query.Where(x => x.ExaminationDate.Date <= toDate.Value.Date);
+                var utcToDate = DateTime.SpecifyKind(toDate.Value.Date, DateTimeKind.Utc);
+                query = query.Where(x => x.ExaminationDate.Date <= utcToDate.Date);
             }
 
             if (!string.IsNullOrWhiteSpace(address))
