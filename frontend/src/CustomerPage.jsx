@@ -728,7 +728,7 @@ function CustomerPage() {
              
 
               {/* CĂN CƯỚC */}
-              <div className="col-md-2">
+              <div className="col-md-3">
                 <label className="form-label fw-semibold">
                   Căn cước{" "}
                   <span className="text-danger">
@@ -751,7 +751,7 @@ function CustomerPage() {
               </div>
 
               {/* HỌ TÊN */}
-              <div className="col-md-6">
+              <div className="col-md-5">
                 <label className="form-label fw-semibold">
                   Họ và tên{" "}
                   <span className="text-danger">
@@ -931,7 +931,7 @@ function CustomerPage() {
                 />
               </div>
               {/* NGÀY KHÁM */}
-              <div className="col-md-2">
+              <div className="col-md-3">
                 <label className="form-label fw-semibold">
                   Ngày khám{" "}
                   <span className="text-danger">
@@ -961,7 +961,7 @@ function CustomerPage() {
               </div>
 
               {/* ĐỐI TƯỢNG */}
-              <div className="col-md-2">
+              <div className="col-md-3">
                 <label className="form-label fw-semibold">
                   Đối tượng
                 </label>
