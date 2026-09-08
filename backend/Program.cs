@@ -123,6 +123,7 @@ using (var scope = app.Services.CreateScope())
 
     if (db.Database.IsNpgsql())
     {
+        db.Database.ExecuteSqlRaw("ALTER TABLE \"Customers\" ADD COLUMN IF NOT EXISTS \"Phone\" text NOT NULL DEFAULT '';");
         db.Database.ExecuteSqlRaw("""
             CREATE OR REPLACE FUNCTION unicode_lower(value text)
             RETURNS text LANGUAGE sql IMMUTABLE PARALLEL SAFE
