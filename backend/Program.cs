@@ -3,6 +3,7 @@ using Microsoft.Data.Sqlite;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Npgsql;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -17,6 +18,22 @@ var jwtKey = Environment.GetEnvironmentVariable("JWT_KEY")
 
 var postgresConnectionString = Environment.GetEnvironmentVariable("DATABASE_URL")
     ?? Environment.GetEnvironmentVariable("SUPABASE_CONNECTION_STRING");
+if (!string.IsNullOrWhiteSpace(postgresConnectionString)
+    && (postgresConnectionString.StartsWith("postgres://", StringComparison.OrdinalIgnoreCase)
+        || postgresConnectionString.StartsWith("postgresql://", StringComparison.OrdinalIgnoreCase)))
+{
+    var databaseUri = new Uri(postgresConnectionString);
+    var userInfo = databaseUri.UserInfo.Split(':', 2);
+    postgresConnectionString = new NpgsqlConnectionStringBuilder
+    {
+        Host = databaseUri.Host,
+        Port = databaseUri.Port > 0 ? databaseUri.Port : 5432,
+        Database = databaseUri.AbsolutePath.Trim('/'),
+        Username = Uri.UnescapeDataString(userInfo[0]),
+        Password = userInfo.Length > 1 ? Uri.UnescapeDataString(userInfo[1]) : string.Empty,
+        SslMode = SslMode.Require,
+    }.ConnectionString;
+}
 var usePostgres = !string.IsNullOrWhiteSpace(postgresConnectionString);
 var dataDirectory = Environment.GetEnvironmentVariable("UBND_KTYTE_DATA_DIR");
 if (string.IsNullOrWhiteSpace(dataDirectory))
