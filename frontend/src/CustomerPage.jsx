@@ -995,7 +995,7 @@ function CustomerPage() {
               </div>
 
               {/* NGHỀ NGHIỆP */}
-              <div className="col-md-2">
+              <div className="col-md-3">
                 <label className="form-label fw-semibold">
                   Nghề nghiệp
                 </label>
