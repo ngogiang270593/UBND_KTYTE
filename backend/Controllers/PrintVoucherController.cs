@@ -451,14 +451,18 @@ namespace backend.Controllers
 
             if (fromDate.HasValue)
             {
+                var utcFromDate = DateTime.SpecifyKind(fromDate.Value.Date, DateTimeKind.Utc);
                 query = query.Where(x =>
-                    x.ExaminationDate >= fromDate.Value.Date
+                    x.ExaminationDate >= utcFromDate
                 );
             }
 
             if (toDate.HasValue)
             {
-                var exclusiveToDate = toDate.Value.Date.AddDays(1);
+                var exclusiveToDate = DateTime.SpecifyKind(
+                    toDate.Value.Date.AddDays(1),
+                    DateTimeKind.Utc
+                );
                 query = query.Where(x =>
                     x.ExaminationDate < exclusiveToDate
                 );
@@ -630,12 +634,14 @@ namespace backend.Controllers
 
             if (fromDate.HasValue)
             {
-                query = query.Where(x => x.PurchaseDate.Date >= fromDate.Value.Date);
+                var utcFromDate = DateTime.SpecifyKind(fromDate.Value.Date, DateTimeKind.Utc);
+                query = query.Where(x => x.PurchaseDate >= utcFromDate);
             }
 
             if (toDate.HasValue)
             {
-                query = query.Where(x => x.PurchaseDate.Date <= toDate.Value.Date);
+                var exclusiveToDate = DateTime.SpecifyKind(toDate.Value.Date.AddDays(1), DateTimeKind.Utc);
+                query = query.Where(x => x.PurchaseDate < exclusiveToDate);
             }
             var rows = await query
                 .OrderBy(x => x.PurchaseDate)
