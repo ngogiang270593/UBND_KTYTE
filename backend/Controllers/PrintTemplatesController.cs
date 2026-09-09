@@ -116,7 +116,7 @@ namespace backend.Controllers
                 TemplateType = templateType,
                 FileName = file.FileName,
                 FilePath = savePath,
-                UploadedAt = DateTime.Now
+                UploadedAt = DateTime.UtcNow
             };
 
             _context.PrintTemplates.Add(item);

@@ -28,6 +28,6 @@ namespace backend.Models
 
         public string SourceFileName { get; set; } = "";
 
-        public DateTime ImportedAt { get; set; } = DateTime.Now;
+        public DateTime ImportedAt { get; set; } = DateTime.UtcNow;
     }
 }

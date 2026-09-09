@@ -22,7 +22,7 @@ namespace backend.Controllers
         public async Task<IActionResult> Import([FromBody] List<TanChauInpatientRecord>? rows)
         {
             if (rows == null || rows.Count == 0) return BadRequest(new { message = "Không có dữ liệu nội trú Tân Châu để import." });
-            foreach (var row in rows) { row.Id = 0; row.ImportedAt = DateTime.Now; }
+            foreach (var row in rows) { row.Id = 0; row.ImportedAt = DateTime.UtcNow; }
             await _context.TanChauInpatientRecords.AddRangeAsync(rows);
             await _context.SaveChangesAsync();
             return Ok(new { message = "Import nội trú Tân Châu hoàn tất.", savedCount = rows.Count });

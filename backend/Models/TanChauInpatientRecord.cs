@@ -32,6 +32,6 @@ namespace backend.Models
         public string MaNoiDen { get; set; } = "";
         public string SoNgayDtri { get; set; } = "";
         public string SourceFileName { get; set; } = "";
-        public DateTime ImportedAt { get; set; } = DateTime.Now;
+        public DateTime ImportedAt { get; set; } = DateTime.UtcNow;
     }
 }

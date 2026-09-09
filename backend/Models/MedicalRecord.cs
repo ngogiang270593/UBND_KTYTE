@@ -14,6 +14,6 @@ namespace backend.Models
         public string Address { get; set; } = string.Empty;
         public string Note { get; set; } = string.Empty;
         public string SourceFileName { get; set; } = string.Empty;
-        public DateTime ImportedAt { get; set; } = DateTime.Now;
+        public DateTime ImportedAt { get; set; } = DateTime.UtcNow;
     }
 }

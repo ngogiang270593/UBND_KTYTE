@@ -56,7 +56,7 @@ namespace backend.Controllers
                 row.Stt = (row.Stt ?? "").Trim(); row.HoTen = (row.HoTen ?? "").Trim();
                 row.NgaySinh = (row.NgaySinh ?? "").Trim(); row.Cccd = (row.Cccd ?? "").Trim();
                 row.DiaChi = (row.DiaChi ?? "").Trim();
-                row.DoiTuong = (row.DoiTuong ?? "").Trim(); row.ImportedAt = DateTime.Now;
+                row.DoiTuong = (row.DoiTuong ?? "").Trim(); row.ImportedAt = DateTime.UtcNow;
             }
             await _context.CommuneSubjectRecords.AddRangeAsync(rows);
             await _context.SaveChangesAsync();

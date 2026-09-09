@@ -9,6 +9,6 @@ namespace backend.Models
         public string Cccd { get; set; } = "";
         public string DiaChi { get; set; } = "";
         public string SourceFileName { get; set; } = "";
-        public DateTime ImportedAt { get; set; } = DateTime.Now;
+        public DateTime ImportedAt { get; set; } = DateTime.UtcNow;
     }
 }

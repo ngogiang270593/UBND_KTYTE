@@ -12,6 +12,6 @@ namespace backend.Models
 
         public string FilePath { get; set; } = "";
 
-        public DateTime UploadedAt { get; set; } = DateTime.Now;
+        public DateTime UploadedAt { get; set; } = DateTime.UtcNow;
     }
 }

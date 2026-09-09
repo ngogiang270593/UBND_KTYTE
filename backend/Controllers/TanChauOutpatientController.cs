@@ -23,7 +23,7 @@ namespace backend.Controllers
         {
             if (rows == null || rows.Count == 0)
                 return BadRequest(new { message = "Không có dữ liệu ngoại trú Tân Châu để import." });
-            foreach (var row in rows) { row.Id = 0; row.ImportedAt = DateTime.Now; }
+            foreach (var row in rows) { row.Id = 0; row.ImportedAt = DateTime.UtcNow; }
             await _context.TanChauOutpatientRecords.AddRangeAsync(rows);
             await _context.SaveChangesAsync();
             return Ok(new { message = "Import ngoại trú Tân Châu hoàn tất.", savedCount = rows.Count });
