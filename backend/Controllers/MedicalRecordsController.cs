@@ -50,8 +50,16 @@ namespace backend.Controllers
                 var value = gender.Trim().ToLower();
                 query = query.Where(x => AppDbContext.UnicodeLower(x.Gender).Contains(value));
             }
-            if (fromBirthDate.HasValue) query = query.Where(x => x.DateOfBirth >= fromBirthDate.Value.Date);
-            if (toBirthDate.HasValue) query = query.Where(x => x.DateOfBirth <= toBirthDate.Value.Date);
+            if (fromBirthDate.HasValue)
+            {
+                var utcFromBirthDate = DateTime.SpecifyKind(fromBirthDate.Value.Date, DateTimeKind.Utc);
+                query = query.Where(x => x.DateOfBirth >= utcFromBirthDate);
+            }
+            if (toBirthDate.HasValue)
+            {
+                var utcToBirthDate = DateTime.SpecifyKind(toBirthDate.Value.Date, DateTimeKind.Utc);
+                query = query.Where(x => x.DateOfBirth <= utcToBirthDate);
+            }
             return Ok(await query.OrderByDescending(x => x.ImportedAt).ThenBy(x => x.SequenceNumber).ToListAsync());
         }
 
@@ -69,7 +77,10 @@ namespace backend.Controllers
                 var name = (row.FullName ?? "").Trim();
                 valid.Add(new MedicalRecord {
                     SequenceNumber = row.SequenceNumber, PatientId = pid, FullName = name,
-                    DateOfBirth = row.DateOfBirth?.Date, Gender = (row.Gender ?? "").Trim(),
+                    DateOfBirth = row.DateOfBirth.HasValue
+                        ? DateTime.SpecifyKind(row.DateOfBirth.Value.Date, DateTimeKind.Utc)
+                        : null,
+                    Gender = (row.Gender ?? "").Trim(),
                     PhoneNumber = (row.PhoneNumber ?? "").Trim(), CitizenId = (row.CitizenId ?? "").Trim(),
                     HealthInsuranceNumber = (row.HealthInsuranceNumber ?? "").Trim(), Address = (row.Address ?? "").Trim(),
                     Note = (row.Note ?? "").Trim(), SourceFileName = (row.SourceFileName ?? "").Trim()
