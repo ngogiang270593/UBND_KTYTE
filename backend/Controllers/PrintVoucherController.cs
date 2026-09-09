@@ -1,9 +1,6 @@
 using System.IO.Compression;
 using ClosedXML.Excel;
 using backend.Data;
-using DocumentFormat.OpenXml;
-using DocumentFormat.OpenXml.Packaging;
-using DocumentFormat.OpenXml.Spreadsheet;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -68,8 +65,9 @@ namespace backend.Controllers
             return Ok(customers);
         }
 
-        public sealed class UpdateAddressesRequest { public List<int> CustomerIds { get; set; } = new(); public bool PreviewOnly { get; set; } public string Source { get; set; } = "all"; public string MatchType { get; set; } = "all"; }
+        public sealed class UpdateAddressesRequest { public List<int> CustomerIds { get; set; } = new(); public bool PreviewOnly { get; set; } public bool UpdateBirthDateOnly { get; set; } public string UpdateMode { get; set; } = "address"; public string Source { get; set; } = "all"; public string MatchType { get; set; } = "all"; }
         public sealed class UpdateObjectTypeRequest { public int CustomerId { get; set; } public int CommuneSubjectId { get; set; } }
+        public sealed class UpdateObjectTypesRequest { public List<int> CustomerIds { get; set; } = new(); }
         private sealed record AddressLookupRow(string Cccd, string FullName, string BirthDate, string BirthYear, string Address, string Source, string SourceLabel);
 
         [HttpPost("customers/update-addresses-from-commune-subjects")]
@@ -80,6 +78,8 @@ namespace backend.Controllers
             var customers = await _context.Customers.Where(x => ids.Contains(x.Id)).ToListAsync();
             var source = request.Source?.Trim().ToLowerInvariant() ?? "commune";
             var matchType = request.MatchType?.Trim().ToLowerInvariant() ?? "all";
+            var updateMode = request.UpdateMode?.Trim().ToLowerInvariant() ?? "address";
+            var updateBirthDateOnly = request.UpdateBirthDateOnly || updateMode == "birth-date";
             if (!new[] { "all", "cccd", "name-date", "name-year" }.Contains(matchType)) matchType = "all";
             var validSources = new[] { "all", "commune", "inpatient", "outpatient", "medical" };
             if (!validSources.Contains(source)) source = "all";
@@ -119,15 +119,18 @@ namespace backend.Controllers
                 if (addressChanged) changes.Add($"Địa chỉ: '{customer.Address ?? ""}' → '{address?.Trim()}'");
                 if (birthDateChanged) changes.Add($"Ngày sinh: '{customer.BirthDate?.ToString("dd/MM/yyyy") ?? "chưa có"}' → '{newBirthDate:dd/MM/yyyy}'");
                 details.Add(new { customerId = customer.Id, customer.Name, source = matchedSource, sourceLabel = matchedSourceLabel, method, matched, currentAddress = customer.Address ?? "", newAddress = address?.Trim() ?? "", currentBirthDate = customer.BirthDate?.ToString("dd/MM/yyyy") ?? "", newBirthDate = newBirthDate?.ToString("dd/MM/yyyy") ?? "", addressChanged, birthDateChanged, description = matched ? $"Nguồn {matchedSourceLabel}; khớp theo {method}. {(changes.Count > 0 ? string.Join("; ", changes) : "Thông tin hiện tại đã trùng với nguồn đối chiếu.")}" : $"Đã kiểm tra {sourceLabel}; không tìm thấy bản ghi khớp theo CCCD, Họ tên + Ngày sinh hoặc Họ tên + Năm sinh." });
-                if (!request.PreviewOnly && matched && (addressChanged || birthDateChanged))
+                var shouldUpdateAddress = !updateBirthDateOnly;
+                var hasChanges = (shouldUpdateAddress && addressChanged) || birthDateChanged;
+                if (!request.PreviewOnly && matched && hasChanges)
                 {
-                    if (addressChanged) customer.Address = address!.Trim();
+                    if (shouldUpdateAddress && addressChanged) customer.Address = address!.Trim();
                     if (birthDateChanged) customer.BirthDate = newBirthDate;
                     updated++;
                 }
             }
             if (!request.PreviewOnly) await _context.SaveChangesAsync();
-            return Ok(new { message = request.PreviewOnly ? "Đã kiểm tra địa chỉ có thể cập nhật." : $"Đã cập nhật địa chỉ cho {updated}/{customers.Count} hồ sơ.", updated, checkedCount = customers.Count, matchable, notMatched = customers.Count - matchable, details });
+            var updateLabel = updateBirthDateOnly ? "ngày sinh" : "địa chỉ và ngày sinh";
+            return Ok(new { message = request.PreviewOnly ? "Đã kiểm tra dữ liệu có thể cập nhật." : $"Đã cập nhật {updateLabel} cho {updated}/{customers.Count} hồ sơ.", updated, checkedCount = customers.Count, matchable, notMatched = customers.Count - matchable, details });
         }
 
         [HttpGet("customers/object-type-mismatches")]
@@ -184,6 +187,36 @@ namespace backend.Controllers
             customer.ObjectType = subject.DoiTuong.Trim();
             await _context.SaveChangesAsync();
             return Ok(new { message = $"Đã cập nhật đối tượng cho {customer.Name}.", objectType = customer.ObjectType });
+        }
+
+        [HttpPost("customers/update-object-types")]
+        public async Task<IActionResult> UpdateObjectTypes([FromBody] UpdateObjectTypesRequest request)
+        {
+            var ids = request.CustomerIds.Distinct().ToList();
+            if (ids.Count == 0) return BadRequest(new { message = "Không có hồ sơ cần cập nhật đối tượng." });
+
+            var customers = await _context.Customers
+                .Where(x => ids.Contains(x.Id) && x.BirthDate.HasValue && x.Name != "")
+                .ToListAsync();
+            var subjects = await _context.CommuneSubjectRecords.AsNoTracking()
+                .Where(x => x.HoTen != "" && x.NgaySinh != "" && x.DoiTuong != "")
+                .Select(x => new { x.HoTen, x.NgaySinh, x.DoiTuong })
+                .ToListAsync();
+            var subjectByNameAndDate = subjects
+                .GroupBy(x => $"{NormalizeText(x.HoTen)}|{NormalizeDate(x.NgaySinh)}")
+                .ToDictionary(x => x.Key, x => x.First());
+            var updated = 0;
+
+            foreach (var customer in customers)
+            {
+                if (!subjectByNameAndDate.TryGetValue($"{NormalizeText(customer.Name)}|{customer.BirthDate:yyyyMMdd}", out var subject)) continue;
+                if (NormalizeText(customer.ObjectType) == NormalizeText(subject.DoiTuong)) continue;
+                customer.ObjectType = subject.DoiTuong.Trim();
+                updated++;
+            }
+
+            if (updated > 0) await _context.SaveChangesAsync();
+            return Ok(new { message = $"Đã cập nhật đối tượng cho {updated}/{ids.Count} hồ sơ.", updated, checkedCount = ids.Count });
         }
 
         private static string NormalizeIdentity(string? value) => new string((value ?? "").Where(char.IsLetterOrDigit).ToArray()).ToUpperInvariant();
@@ -419,14 +452,15 @@ namespace backend.Controllers
             if (fromDate.HasValue)
             {
                 query = query.Where(x =>
-                    x.ExaminationDate.Date >= fromDate.Value.Date
+                    x.ExaminationDate >= fromDate.Value.Date
                 );
             }
 
             if (toDate.HasValue)
             {
+                var exclusiveToDate = toDate.Value.Date.AddDays(1);
                 query = query.Where(x =>
-                    x.ExaminationDate.Date <= toDate.Value.Date
+                    x.ExaminationDate < exclusiveToDate
                 );
             }
 
@@ -557,8 +591,11 @@ namespace backend.Controllers
         {
             if (string.IsNullOrWhiteSpace(templateType))
             {
-                templateType = "PaymentVoucher";
+                templateType = "PurchaseSheet";
             }
+
+            if (templateType == "PaymentVoucher")
+                return BadRequest("Chức năng in Phiếu chi đã được loại bỏ.");
 
             var template = await _context.PrintTemplates
                 .FirstOrDefaultAsync(x => x.TemplateType == templateType);
@@ -673,133 +710,8 @@ namespace backend.Controllers
                 );
             }
 
-            if (templateType == "PaymentVoucher")
-            {
-                if (ext != ".xlsm")
-                    return BadRequest("Mẫu Phiếu chi phải là file .xlsm");
-
-                var tempFile = Path.Combine(
-                    Path.GetTempPath(),
-                    $"PhieuChi_{Guid.NewGuid()}.xlsm"
-                );
-
-                System.IO.File.Copy(template.FilePath, tempFile, true);
-
-                using (var document = SpreadsheetDocument.Open(tempFile, true))
-                {
-                    var workbookPart = document.WorkbookPart!;
-                    var sheet = workbookPart.Workbook.Sheets!.Elements<Sheet>().First();
-                    var worksheetPart = (WorksheetPart)workbookPart.GetPartById(sheet.Id!);
-
-                    int excelRow = 7;
-                    int stt = 1;
-
-                    foreach (var item in rows)
-                    {
-                        SetCellValue(worksheetPart, $"A{excelRow}", $"PC {stt:00}");
-                        SetCellValue(worksheetPart, $"B{excelRow}", item.PurchaseDate.ToString("dd/MM/yyyy"));
-                        SetCellValue(worksheetPart, $"C{excelRow}", "Thanh toán tiền mủ cao su tươi");
-                        SetCellValue(worksheetPart, $"D{excelRow}", "");
-                        SetCellValue(worksheetPart, $"E{excelRow}", "111");
-                        SetCellNumber(worksheetPart, $"F{excelRow}", item.TotalAmount);
-                        SetCellValue(worksheetPart, $"G{excelRow}", item.CustomerName);
-                        SetCellValue(worksheetPart, $"H{excelRow}", item.Address);
-                        SetCellValue(worksheetPart, $"I{excelRow}", "");
-
-                        excelRow++;
-                        stt++;
-                    }
-
-                    worksheetPart.Worksheet.Save();
-                    workbookPart.Workbook.Save();
-                }
-
-                var bytes = await System.IO.File.ReadAllBytesAsync(tempFile);
-
-                try
-                {
-                    System.IO.File.Delete(tempFile);
-                }
-                catch { }
-
-                var fileName = $"PhieuChi_{DateTime.Now:yyyyMMddHHmmss}.xlsm";
-                Response.Headers.Append(
-                    "Access-Control-Expose-Headers",
-                    "Content-Disposition"
-                );
-
-                return File(
-                    bytes,
-                    "application/vnd.ms-excel.sheet.macroEnabled.12",
-                    fileName
-                );
-            }
-
             return BadRequest("Loại mẫu chưa được hỗ trợ");
         }
 
-        private static void SetCellValue(
-            WorksheetPart worksheetPart,
-            string cellReference,
-            string value
-        )
-        {
-            var cell = GetOrCreateCell(worksheetPart, cellReference);
-
-            cell.CellValue = new CellValue(value ?? "");
-            cell.DataType = CellValues.String;
-        }
-
-        private static void SetCellNumber(
-            WorksheetPart worksheetPart,
-            string cellReference,
-            decimal value
-        )
-        {
-            var cell = GetOrCreateCell(worksheetPart, cellReference);
-
-            cell.CellValue = new CellValue(value.ToString(System.Globalization.CultureInfo.InvariantCulture));
-            cell.DataType = CellValues.Number;
-        }
-
-        private static Cell GetOrCreateCell(
-            WorksheetPart worksheetPart,
-            string cellReference
-        )
-        {
-            var worksheet = worksheetPart.Worksheet;
-            var sheetData = worksheet.GetFirstChild<SheetData>()!;
-
-            uint rowIndex = GetRowIndex(cellReference);
-
-            var row = sheetData.Elements<Row>()
-                .FirstOrDefault(r => r.RowIndex == rowIndex);
-
-            if (row == null)
-            {
-                row = new Row { RowIndex = rowIndex };
-                sheetData.Append(row);
-            }
-
-            var cell = row.Elements<Cell>()
-                .FirstOrDefault(c => c.CellReference == cellReference);
-
-            if (cell == null)
-            {
-                cell = new Cell { CellReference = cellReference };
-                row.Append(cell);
-            }
-
-            return cell;
-        }
-
-        private static uint GetRowIndex(string cellReference)
-        {
-            var number = new string(
-                cellReference.Where(char.IsDigit).ToArray()
-            );
-
-            return uint.Parse(number);
-        }
     }
 }

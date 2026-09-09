@@ -5,7 +5,7 @@ import { useNotification } from "./NotificationProvider";
 function PrintTemplatePage() {
   const { confirm } = useNotification();
   const [templates, setTemplates] = useState([]);
-  const [templateType, setTemplateType] = useState("PaymentVoucher");
+  const [templateType, setTemplateType] = useState("PurchaseSheet");
   const [file, setFile] = useState(null);
   const [message, setMessage] = useState("");
 
@@ -66,7 +66,6 @@ function PrintTemplatePage() {
   };
 
   const getTypeName = (type) => {
-    if (type === "PaymentVoucher") return "Phiếu chi";
     if (type === "PurchaseSheet") return "Phiếu chi tờ";
     return type;
   };
@@ -90,7 +89,6 @@ function PrintTemplatePage() {
                   value={templateType}
                   onChange={(e) => setTemplateType(e.target.value)}
                 >
-                  <option value="PaymentVoucher">Phiếu chi</option>
                   <option value="PurchaseSheet">Phiếu chi tờ</option>
                 </select>
               </div>

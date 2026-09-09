@@ -35,7 +35,6 @@ namespace backend.Controllers
         {
             return type switch
             {
-                "PaymentVoucher" => "Phiếu chi",
                 "PurchaseSheet" => "Bảng kê thu mua",
                 "Receipt" => "Phiếu thu",
                 _ => type
@@ -46,6 +45,7 @@ namespace backend.Controllers
         public async Task<IActionResult> GetAll()
         {
             var data = await _context.PrintTemplates
+                .Where(x => x.TemplateType != "PaymentVoucher")
                 .OrderBy(x => x.TemplateType)
                 .ToListAsync();
 
@@ -62,6 +62,9 @@ namespace backend.Controllers
         {
             var templateType = request.TemplateType;
             var file = request.File;
+
+            if (templateType == "PaymentVoucher")
+                return BadRequest("Chức năng in Phiếu chi đã được loại bỏ.");
 
             if (string.IsNullOrWhiteSpace(templateType))
                 return BadRequest("Thiếu loại mẫu in");

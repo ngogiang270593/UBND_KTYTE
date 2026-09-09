@@ -35,6 +35,63 @@ const normalizeSearchText = (value) =>
     .toLocaleLowerCase("vi-VN")
     .trim();
 
+const parseDateOnly = (value) => {
+  const [year, month, day] = String(value ?? "")
+    .substring(0, 10)
+    .split("-")
+    .map(Number);
+
+  if (!year || !month || !day) return null;
+
+  const date = new Date(year, month - 1, day);
+
+  return date.getFullYear() === year &&
+    date.getMonth() === month - 1 &&
+    date.getDate() === day
+    ? date
+    : null;
+};
+
+const normalizeHamlet = (value) =>
+  normalizeSearchText(value)
+    .replace(/\([^)]*\)/g, " ")
+    .replace(/^[\s.:;-]*ap\s+/, "")
+    .replace(/[\s.:;-]+$/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+
+const getHamletFromAddress = (address, hamlets) => {
+  const parts = String(address ?? "")
+    .split(/[,;]/)
+    .map(normalizeHamlet)
+    .filter(Boolean);
+  const normalizedHamlets = hamlets
+    .map((hamlet) => ({
+      name: hamlet.name,
+      normalizedName: normalizeHamlet(hamlet.name),
+    }))
+    .filter((hamlet) => hamlet.normalizedName);
+
+  const exactMatch = normalizedHamlets.find((hamlet) =>
+    parts.some((part) => part === hamlet.normalizedName)
+  );
+
+  if (exactMatch) return exactMatch.name;
+
+  return normalizedHamlets
+    .filter((hamlet) =>
+      parts.some(
+        (part) =>
+          part.startsWith(`${hamlet.normalizedName} `) ||
+          part.endsWith(` ${hamlet.normalizedName}`)
+      )
+    )
+    .sort(
+      (first, second) =>
+        second.normalizedName.length - first.normalizedName.length
+    )[0]?.name ?? "Chưa xác định";
+};
+
 const PAGE_SIZE = 50;
 
 function CustomerPage() {
@@ -91,15 +148,94 @@ function CustomerPage() {
 
   const todayDate = toApiDate(new Date());
 
-  const todayExaminationCount = useMemo(
+  const todayExaminations = useMemo(
     () =>
       customers.filter(
         (customer) =>
           String(customer.examinationDate ?? "").substring(0, 10) ===
           todayDate
-      ).length,
+      ),
     [customers, todayDate]
   );
+
+  const todayExaminationCount = todayExaminations.length;
+
+  const todayUnder18Count = useMemo(
+    () =>
+      todayExaminations.filter((customer) => {
+        if (!customer.birthDate) return false;
+
+        const birthDate = parseDateOnly(customer.birthDate);
+        const examinationDate = parseDateOnly(customer.examinationDate);
+
+        if (!birthDate || !examinationDate) {
+          return false;
+        }
+
+        const eighteenthBirthday = new Date(birthDate);
+        eighteenthBirthday.setFullYear(
+          eighteenthBirthday.getFullYear() + 18
+        );
+
+        return eighteenthBirthday > examinationDate;
+      }).length,
+    [todayExaminations]
+  );
+
+  const todayElderlyCount = useMemo(
+    () =>
+      todayExaminations.filter(
+        (customer) =>
+          normalizeSearchText(customer.objectType) ===
+          normalizeSearchText("NGƯỜI CAO TUỔI")
+      ).length,
+    [todayExaminations]
+  );
+
+  const todayHamletSummary = useMemo(() => {
+    const summary = new Map();
+
+    todayExaminations.forEach((customer) => {
+      const hamletName = getHamletFromAddress(
+        customer.address,
+        catalogOptions.hamlet
+      );
+      const current = summary.get(hamletName) ?? {
+        total: 0,
+        under18: 0,
+        elderly: 0,
+      };
+
+      current.total += 1;
+
+      const birthDate = parseDateOnly(customer.birthDate);
+      const examinationDate = parseDateOnly(customer.examinationDate);
+
+      if (birthDate && examinationDate) {
+        const eighteenthBirthday = new Date(birthDate);
+        eighteenthBirthday.setFullYear(
+          eighteenthBirthday.getFullYear() + 18
+        );
+
+        if (eighteenthBirthday > examinationDate) {
+          current.under18 += 1;
+        }
+      }
+
+      if (
+        normalizeSearchText(customer.objectType) ===
+        normalizeSearchText("NGƯỜI CAO TUỔI")
+      ) {
+        current.elderly += 1;
+      }
+
+      summary.set(hamletName, current);
+    });
+
+    return [...summary.entries()].sort((first, second) =>
+      first[0].localeCompare(second[0], "vi")
+    );
+  }, [catalogOptions.hamlet, todayExaminations]);
 
   const totalPages = Math.max(
     1,
@@ -1101,23 +1237,57 @@ function CustomerPage() {
           </div>
 
           <div
-            className="d-flex align-items-center justify-content-between gap-3 mb-3 px-3 py-3"
+            className="mb-3 px-3 py-3"
             style={{
-              background: "linear-gradient(135deg, #fff7ed, #ffedd5)",
+              background: "linear-gradient(135deg, #fffaf5, #fff4e6)",
               border: "1px solid #fed7aa",
               borderRadius: "14px",
             }}
           >
-            <div>
-              <div className="small fw-semibold text-uppercase" style={{ color: "#9a3412", letterSpacing: "0.04em" }}>
-                Thống kê hôm nay
+            <div className="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3">
+              <div>
+                <div className="small fw-semibold text-uppercase" style={{ color: "#9a3412", letterSpacing: "0.04em" }}>
+                  Thống kê hôm nay
+                </div>
+                <div className="fw-semibold text-dark">Tổng hồ sơ khám trong ngày</div>
               </div>
-              <div className="fw-semibold text-dark">Tổng hồ sơ khám trong ngày</div>
+              <div className="d-flex flex-wrap gap-2">
+                <div className="px-3 py-2 text-center" style={{ minWidth: "108px", background: "#fff", border: "1px solid #fed7aa", borderRadius: "10px" }}>
+                  <div className="small text-muted">Tổng hồ sơ</div>
+                  <strong style={{ color: "#c2410c", fontSize: "1.6rem", lineHeight: 1.1 }}>{todayExaminationCount}</strong>
+                </div>
+                <div className="px-3 py-2 text-center" style={{ minWidth: "108px", background: "#fff", border: "1px solid #fed7aa", borderRadius: "10px" }}>
+                  <div className="small text-muted">Dưới 18 tuổi</div>
+                  <strong style={{ color: "#0369a1", fontSize: "1.6rem", lineHeight: 1.1 }}>{todayUnder18Count}</strong>
+                </div>
+                <div className="px-3 py-2 text-center" style={{ minWidth: "108px", background: "#fff", border: "1px solid #fed7aa", borderRadius: "10px" }}>
+                  <div className="small text-muted">Người cao tuổi</div>
+                  <strong style={{ color: "#7c2d12", fontSize: "1.6rem", lineHeight: 1.1 }}>{todayElderlyCount}</strong>
+                </div>
+              </div>
             </div>
-            <div className="d-flex align-items-baseline gap-2" style={{ color: "#c2410c" }}>
-              <strong style={{ fontSize: "2rem", lineHeight: 1 }}>{todayExaminationCount}</strong>
-              <span className="fw-semibold">hồ sơ</span>
-            </div>
+            {todayHamletSummary.length > 0 && (
+              <div>
+                <div className="small fw-semibold text-muted mb-2">Phân bổ theo ấp</div>
+                <div className="row g-2">
+                  {todayHamletSummary.map(([hamletName, summary]) => (
+                    <div className="col-12 col-md-6 col-xl-4" key={hamletName}>
+                      <div className="h-100 px-3 py-2" style={{ background: "rgba(255, 255, 255, 0.72)", border: "1px solid #fde1c1", borderRadius: "9px" }}>
+                        <div className="d-flex justify-content-between align-items-center gap-2">
+                          <strong className="text-dark text-truncate" title={hamletName}>{hamletName}</strong>
+                          <span className="badge rounded-pill" style={{ background: "#ffedd5", color: "#9a3412" }}>{summary.total}</span>
+                        </div>
+                        <div className="small text-muted mt-1">
+                          Dưới 18: <strong>{summary.under18}</strong>
+                          <span className="mx-2">|</span>
+                          Cao tuổi: <strong>{summary.elderly}</strong>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* BẢNG */}
