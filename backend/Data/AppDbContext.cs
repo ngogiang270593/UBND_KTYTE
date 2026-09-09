@@ -28,6 +28,38 @@ namespace backend.Data
         public DbSet<TanChauInpatientRecord> TanChauInpatientRecords { get; set; }
         public DbSet<TanChauOutpatientRecord> TanChauOutpatientRecords { get; set; }
         public DbSet<CommuneSubjectRecord> CommuneSubjectRecords { get; set; }
+
+        public override int SaveChanges(bool acceptAllChangesOnSuccess)
+        {
+            NormalizeDateTimes();
+            return base.SaveChanges(acceptAllChangesOnSuccess);
+        }
+
+        public override Task<int> SaveChangesAsync(
+            bool acceptAllChangesOnSuccess,
+            CancellationToken cancellationToken = default
+        )
+        {
+            NormalizeDateTimes();
+            return base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+        }
+
+        private void NormalizeDateTimes()
+        {
+            foreach (var entry in ChangeTracker.Entries())
+            {
+                foreach (var property in entry.Properties)
+                {
+                    if (property.CurrentValue is DateTime value)
+                    {
+                        property.CurrentValue = value.Kind == DateTimeKind.Local
+                            ? value.ToUniversalTime()
+                            : DateTime.SpecifyKind(value, DateTimeKind.Utc);
+                    }
+                }
+            }
+        }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);

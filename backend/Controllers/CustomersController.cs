@@ -39,7 +39,10 @@ namespace backend.Controllers
             customer.PhoneNumber = customer.PhoneNumber?.Trim() ?? string.Empty;
             customer.Address = customer.Address?.Trim() ?? string.Empty;
             customer.Occupation = customer.Occupation?.Trim() ?? string.Empty;
-            customer.BirthDate = customer.BirthDate?.Date;
+            customer.ExaminationDate = ToUtcDate(customer.ExaminationDate);
+            customer.BirthDate = customer.BirthDate.HasValue
+                ? ToUtcDate(customer.BirthDate.Value)
+                : null;
 
             if (string.IsNullOrWhiteSpace(customer.Code))
             {
@@ -105,7 +108,10 @@ namespace backend.Controllers
             customer.PhoneNumber = customer.PhoneNumber?.Trim() ?? string.Empty;
             customer.Address = customer.Address?.Trim() ?? string.Empty;
             customer.Occupation = customer.Occupation?.Trim() ?? string.Empty;
-            customer.BirthDate = customer.BirthDate?.Date;
+            customer.ExaminationDate = ToUtcDate(customer.ExaminationDate);
+            customer.BirthDate = customer.BirthDate.HasValue
+                ? ToUtcDate(customer.BirthDate.Value)
+                : null;
 
             if (string.IsNullOrWhiteSpace(customer.Code))
             {
@@ -169,6 +175,14 @@ namespace backend.Controllers
             await _context.SaveChangesAsync();
 
             return Ok();
+        }
+
+        private static DateTime ToUtcDate(DateTime value)
+        {
+            var date = value.Date;
+            return value.Kind == DateTimeKind.Local
+                ? date.ToUniversalTime()
+                : DateTime.SpecifyKind(date, DateTimeKind.Utc);
         }
     }
 }
