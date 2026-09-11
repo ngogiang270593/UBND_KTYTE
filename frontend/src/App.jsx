@@ -20,6 +20,7 @@ import CommuneSubjectImportPage from "./CommuneSubjectImportPage";
 import CommuneSubjectListPage from "./CommuneSubjectListPage";
 import DashboardHome from "./DashboardHome";
 import HealthDataProcessingPage from "./HealthDataProcessingPage";
+import ExaminationPlacePage from "./ExaminationPlacePage";
 function App() {
   const [token, setToken] = useState(sessionStorage.getItem("token"));
   const [activePage, setActivePage] = useState("dashboard");
@@ -52,6 +53,7 @@ function App() {
     if (activePage === "consolidatedList") return <ConsolidatedListPage />;
     if (activePage === "printTemplates") return <PrintTemplatePage />;
     if (activePage === "printVoucher") return <PrintVoucherPage />;
+    if (activePage === "examinationPlace") return <ExaminationPlacePage />;
     if (activePage === "changePassword") return <ChangePasswordPage />;
     if (activePage === "catalog") return <CatalogPage />;
     if (activePage === "healthDataProcessing") return <HealthDataProcessingPage />;

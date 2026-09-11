@@ -46,8 +46,24 @@ if (!string.IsNullOrWhiteSpace(postgresConnectionString))
     postgresConnectionString = connectionBuilder.ConnectionString;
 }
 var usePostgres = !string.IsNullOrWhiteSpace(postgresConnectionString);
-var dataDirectory = Environment.GetEnvironmentVariable("UBND_KTYTE_DATA_DIR");
-if (string.IsNullOrWhiteSpace(dataDirectory))
+var dataProfile = Environment.GetEnvironmentVariable("UBND_KTYTE_DATA_PROFILE");
+var configuredDataDirectory = Environment.GetEnvironmentVariable("UBND_KTYTE_DATA_DIR");
+string dataDirectory;
+
+if (string.Equals(dataProfile, "web", StringComparison.OrdinalIgnoreCase))
+{
+    // Web local must never inherit the desktop data directory.
+    dataDirectory = Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+        "UBND_KTYTE",
+        "web"
+    );
+}
+else if (!string.IsNullOrWhiteSpace(configuredDataDirectory))
+{
+    dataDirectory = configuredDataDirectory;
+}
+else
 {
     dataDirectory = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
@@ -57,6 +73,7 @@ if (string.IsNullOrWhiteSpace(dataDirectory))
 
 Directory.CreateDirectory(dataDirectory);
 var databasePath = Path.Combine(dataDirectory, "app2026.db");
+Console.WriteLine($"SQLite database path: {databasePath}");
 
 builder.Services.AddControllers();
 
@@ -131,6 +148,8 @@ using (var scope = app.Services.CreateScope())
             ALTER TABLE "Customers" ADD COLUMN IF NOT EXISTS "Email" text NOT NULL DEFAULT '';
             ALTER TABLE "Customers" ADD COLUMN IF NOT EXISTS "TaxCode" text NOT NULL DEFAULT '';
             ALTER TABLE "Customers" ADD COLUMN IF NOT EXISTS "ExaminationDate" timestamp without time zone NOT NULL DEFAULT TIMESTAMP '0001-01-01 00:00:00';
+            ALTER TABLE "Customers" ADD COLUMN IF NOT EXISTS "CitizenIdIssueDate" timestamp without time zone NULL;
+            ALTER TABLE "Customers" ADD COLUMN IF NOT EXISTS "ExaminationPlace" text NOT NULL DEFAULT '';
             ALTER TABLE "Customers" ADD COLUMN IF NOT EXISTS "BirthDate" timestamp without time zone NULL;
             """);
         db.Database.ExecuteSqlRaw("""
@@ -255,6 +274,21 @@ using (var scope = app.Services.CreateScope())
         }
     }
     db.Database.ExecuteSqlRaw("CREATE UNIQUE INDEX IF NOT EXISTS IX_CatalogItems_Category_Name ON CatalogItems (Category, Name);");
+    using (var command = db.Database.GetDbConnection().CreateCommand())
+    {
+        command.CommandText = "PRAGMA table_info('Customers');";
+        db.Database.OpenConnection();
+        var columns = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        using (var reader = command.ExecuteReader())
+        {
+            while (reader.Read()) columns.Add(reader.GetString(1));
+        }
+        db.Database.CloseConnection();
+        if (!columns.Contains("CitizenIdIssueDate"))
+            db.Database.ExecuteSqlRaw("ALTER TABLE Customers ADD COLUMN CitizenIdIssueDate TEXT NULL;");
+        if (!columns.Contains("ExaminationPlace"))
+            db.Database.ExecuteSqlRaw("ALTER TABLE Customers ADD COLUMN ExaminationPlace TEXT NOT NULL DEFAULT '';");
+    }
     db.Database.ExecuteSqlRaw("CREATE INDEX IF NOT EXISTS IX_Customers_Code ON Customers (Code);");
     db.Database.ExecuteSqlRaw("CREATE INDEX IF NOT EXISTS IX_Customers_ExaminationDate ON Customers (ExaminationDate);");
     db.Database.ExecuteSqlRaw("CREATE INDEX IF NOT EXISTS IX_Customers_Name ON Customers (Name);");
@@ -337,7 +371,8 @@ using (var scope = app.Services.CreateScope())
     var catalogDefaults = new Dictionary<string, string[]>
     {
         ["objectType"] = new[] { "CÔNG CHỨC", "DÂN QUÂN", "GIÁO VIÊN", "NGƯỜI CAO TUỔI", "NGƯỜI DÂN", "THƯƠNG BINH", "KHUYẾT TẬT" },
-        ["occupation"] = new[] { "NÔNG DÂN", "CÔNG NHÂN", "BUÔN BÁN", "KINH DOANH", "CÁN BỘ, CÔNG CHỨC", "VIÊN CHỨC", "GIÁO VIÊN", "LAO ĐỘNG TỰ DO", "NỘI TRỢ", "HỌC SINH, SINH VIÊN" }
+        ["occupation"] = new[] { "NÔNG DÂN", "CÔNG NHÂN", "BUÔN BÁN", "KINH DOANH", "CÁN BỘ, CÔNG CHỨC", "VIÊN CHỨC", "GIÁO VIÊN", "LAO ĐỘNG TỰ DO", "NỘI TRỢ", "HỌC SINH, SINH VIÊN" },
+        ["examinationPlace"] = new[] { "TRẠM Y TẾ XÃ", "TRUNG TÂM Y TẾ HUYỆN", "BỆNH VIỆN ĐA KHOA", "TỰ NGUYỆN", "NƠI KHÁC" }
     };
 
     foreach (var (category, names) in catalogDefaults)

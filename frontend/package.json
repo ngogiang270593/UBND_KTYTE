@@ -4,8 +4,11 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
+    "dev": "vite --mode web",
+    "dev:web": "vite --mode web",
+    "dev:pc": "vite --mode desktop",
+    "build": "vite build --mode desktop",
+    "build:web": "vite build --mode web",
     "lint": "eslint .",
     "preview": "vite preview"
   },

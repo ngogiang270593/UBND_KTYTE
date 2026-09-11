@@ -15,7 +15,7 @@ namespace backend.Controllers
             using var workbook = new XLWorkbook();
             var worksheet = workbook.Worksheets.Add("DanhSachKham");
 
-            worksheet.Range("A1:J1").Merge();
+            worksheet.Range("A1:L1").Merge();
             worksheet.Cell("A1").Value = "MẪU IMPORT DANH SÁCH KHÁM SỨC KHỎE";
             worksheet.Cell("A1").Style.Font.Bold = true;
             worksheet.Cell("A1").Style.Font.FontSize = 16;
@@ -24,7 +24,7 @@ namespace backend.Controllers
             worksheet.Cell("A1").Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
             worksheet.Row(1).Height = 28;
 
-            worksheet.Range("A2:J2").Merge();
+            worksheet.Range("A2:L2").Merge();
             worksheet.Cell("A2").Value =
                 "Nhập dữ liệu từ dòng 5. Nếu không có Căn cước, hệ thống kiểm tra trùng theo Họ tên + Ngày sinh; nếu thiếu Ngày sinh thì dùng Họ tên + Năm sinh.";
             worksheet.Cell("A2").Style.Font.Italic = true;
@@ -36,7 +36,7 @@ namespace backend.Controllers
                 "Năm sinh", "Ngày khám", "Địa chỉ", "Nghề nghiệp"
             };
             const int headerRow = 4;
-            headers = headers.Append("Ngày sinh").ToArray();
+            headers = headers.Append("Ngày sinh").Append("Nơi khám").Append("Ngày cấp CCCD").ToArray();
 
             for (var column = 1; column <= headers.Length; column++)
             {
@@ -66,6 +66,8 @@ namespace backend.Controllers
             worksheet.Range(firstDataRow, 2, lastDataRow, 2).Style.NumberFormat.Format = "@";
             worksheet.Range(firstDataRow, 6, lastDataRow, 6).Style.NumberFormat.Format = "0";
             worksheet.Range(firstDataRow, 7, lastDataRow, 7).Style.DateFormat.Format = "dd/MM/yyyy";
+            worksheet.Range(firstDataRow, 10, lastDataRow, 10).Style.DateFormat.Format = "dd/MM/yyyy";
+            worksheet.Range(firstDataRow, 12, lastDataRow, 12).Style.DateFormat.Format = "dd/MM/yyyy";
 
             worksheet.Column(1).Width = 8;
             worksheet.Column(2).Width = 20;
@@ -74,9 +76,11 @@ namespace backend.Controllers
             worksheet.Column(5).Width = 16;
             worksheet.Column(6).Width = 14;
             worksheet.Column(7).Width = 16;
-            worksheet.Column(8).Width = 16;
-            worksheet.Column(9).Width = 34;
-            worksheet.Column(10).Width = 24;
+            worksheet.Column(8).Width = 34;
+            worksheet.Column(9).Width = 24;
+            worksheet.Column(10).Width = 16;
+            worksheet.Column(11).Width = 24;
+            worksheet.Column(12).Width = 16;
             worksheet.SheetView.FreezeRows(headerRow);
             worksheet.Range(headerRow, 1, lastDataRow, headers.Length).SetAutoFilter();
 

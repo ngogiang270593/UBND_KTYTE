@@ -3,8 +3,11 @@
 node_modules/
 frontend/node_modules/
 frontend/dist/
+frontend/dist-web/
 backend/bin/
 backend/obj/
 backend/build-check/
 backend/app2026.db*
+publish/
+release/
 *.log

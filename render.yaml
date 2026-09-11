@@ -18,8 +18,8 @@ services:
     runtime: static
     name: ubnd-ktyte-web
     rootDir: frontend
-    buildCommand: npm ci && npm run build
-    staticPublishPath: dist
+    buildCommand: npm ci && npm run build:web
+    staticPublishPath: dist-web
     envVars:
       - key: VITE_API_BASE_URL
         value: https://ubnd-ktyte-api.onrender.com/api

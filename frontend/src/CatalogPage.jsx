@@ -7,6 +7,7 @@ const catalogs = [
   { key: "occupation", label: "Nghề nghiệp" },
   { key: "hamlet", label: "Ấp" },
   { key: "group", label: "Tổ" },
+  { key: "examinationPlace", label: "Nơi khám" },
 ];
 
 const categoriesWithDefault = ["objectType", "hamlet", "group"];

@@ -959,31 +959,24 @@ function CustomerPage() {
                   Tổ
                 </label>
 
-                <select
+                <input
                   name="group"
-                  className="form-select"
+                  className="form-control"
                   value={
                     form.group ?? ""
                   }
                   onChange={
                     handleLocationChange
                   }
+                  list="customer-group-options"
+                  placeholder="Gõ để tìm tổ"
                 >
-                  <option value="">
-                    Không chọn
-                  </option>
-
-                  {catalogOptions.group.map(
-                    (item) => (
-                      <option
-                        key={item.id}
-                        value={item.name}
-                      >
-                        {item.name}
-                      </option>
-                    )
-                  )}
-                </select>
+                </input>
+                <datalist id="customer-group-options">
+                  {catalogOptions.group.map((item) => (
+                    <option key={item.id} value={item.name} />
+                  ))}
+                </datalist>
               </div>
 
               {/* ẤP - CÓ MẶC ĐỊNH */}
@@ -992,31 +985,24 @@ function CustomerPage() {
                   Ấp
                 </label>
 
-                <select
+                <input
                   name="hamlet"
-                  className="form-select"
+                  className="form-control"
                   value={
                     form.hamlet ?? ""
                   }
                   onChange={
                     handleLocationChange
                   }
+                  list="customer-hamlet-options"
+                  placeholder="Gõ để tìm ấp"
                 >
-                  <option value="">
-                    Không chọn
-                  </option>
-
-                  {catalogOptions.hamlet.map(
-                    (item) => (
-                      <option
-                        key={item.id}
-                        value={item.name}
-                      >
-                        {item.name}
-                      </option>
-                    )
-                  )}
-                </select>
+                </input>
+                <datalist id="customer-hamlet-options">
+                  {catalogOptions.hamlet.map((item) => (
+                    <option key={item.id} value={item.name} />
+                  ))}
+                </datalist>
               </div>
 
               {/* ĐỊA CHỈ */}
@@ -1089,9 +1075,9 @@ function CustomerPage() {
                   Đối tượng
                 </label>
 
-                <select
+                <input
                   name="objectType"
-                  className="form-select"
+                  className="form-control"
                   value={
                     form.objectType ??
                     ""
@@ -1099,22 +1085,15 @@ function CustomerPage() {
                   onChange={
                     handleChange
                   }
+                  list="customer-object-type-options"
+                  placeholder="Gõ để tìm đối tượng"
                 >
-                  <option value="">
-                    Không chọn
-                  </option>
-
-                  {catalogOptions.objectType.map(
-                    (item) => (
-                      <option
-                        key={item.id}
-                        value={item.name}
-                      >
-                        {item.name}
-                      </option>
-                    )
-                  )}
-                </select>
+                </input>
+                <datalist id="customer-object-type-options">
+                  {catalogOptions.objectType.map((item) => (
+                    <option key={item.id} value={item.name} />
+                  ))}
+                </datalist>
               </div>
 
               {/* NGHỀ NGHIỆP */}
@@ -1123,9 +1102,9 @@ function CustomerPage() {
                   Nghề nghiệp
                 </label>
 
-                <select
+                <input
                   name="occupation"
-                  className="form-select"
+                  className="form-control"
                   value={
                     form.occupation ??
                     ""
@@ -1133,22 +1112,15 @@ function CustomerPage() {
                   onChange={
                     handleChange
                   }
+                  list="customer-occupation-options"
+                  placeholder="Gõ để tìm nghề nghiệp"
                 >
-                  <option value="">
-                    Không chọn
-                  </option>
-
-                  {catalogOptions.occupation.map(
-                    (item) => (
-                      <option
-                        key={item.id}
-                        value={item.name}
-                      >
-                        {item.name}
-                      </option>
-                    )
-                  )}
-                </select>
+                </input>
+                <datalist id="customer-occupation-options">
+                  {catalogOptions.occupation.map((item) => (
+                    <option key={item.id} value={item.name} />
+                  ))}
+                </datalist>
               </div>
             </div>
 

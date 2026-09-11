@@ -12,6 +12,8 @@ namespace backend.Models
         [Required(ErrorMessage = "Căn cước là bắt buộc.")]
         public string Code { get; set; } = string.Empty;
 
+        public DateTime? CitizenIdIssueDate { get; set; }
+
         [Required(ErrorMessage = "Họ và tên là bắt buộc.")]
         public string Name { get; set; } = string.Empty;
 
@@ -33,6 +35,8 @@ namespace backend.Models
 
         [Required(ErrorMessage = "Ngày khám là bắt buộc.")]
         public DateTime ExaminationDate { get; set; }
+
+        public string ExaminationPlace { get; set; } = string.Empty;
 
         public DateTime? BirthDate { get; set; }
     }

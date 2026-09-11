@@ -87,6 +87,7 @@ app.whenReady().then(async () => {
     env: {
       ...process.env,
       ASPNETCORE_URLS: "http://127.0.0.1:5022",
+      UBND_KTYTE_DATA_PROFILE: "desktop",
       UBND_KTYTE_DATA_DIR: app.getPath("userData"),
     },
   });

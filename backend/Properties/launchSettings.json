@@ -9,6 +9,17 @@
     }
   },
   "profiles": {
+    "web": {
+      "commandName": "Project",
+      "dotnetRunMessages": true,
+      "launchBrowser": true,
+      "launchUrl": "swagger",
+      "applicationUrl": "http://localhost:5023",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "UBND_KTYTE_DATA_PROFILE": "web"
+      }
+    },
     "http": {
       "commandName": "Project",
       "dotnetRunMessages": true,

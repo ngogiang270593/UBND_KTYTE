@@ -7,6 +7,7 @@ export const appModules = [
     { key: "customers", label: "Quản lý khám sức khỏe", icon: "👤" },
     { key: "importData", label: "Import dữ liệu", icon: "📥" },
     { key: "printVoucher", label: "In ấn", icon: "🖨️" },
+    { key: "examinationPlace", label: "Nơi khám", icon: "🏥" },
     { key: "catalog", label: "Danh mục", icon: "📚" },
   ]},
   { id: "hospital", title: "Tân Châu", icon: "🏥", links: [

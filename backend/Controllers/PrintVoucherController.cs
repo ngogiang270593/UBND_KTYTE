@@ -269,6 +269,8 @@ namespace backend.Controllers
                 .Select(x => new
                 {
                     x.Code,
+                    x.ExaminationPlace,
+                    x.CitizenIdIssueDate,
                     x.Name,
                     x.ObjectType,
                     x.PhoneNumber,
@@ -288,7 +290,7 @@ namespace backend.Controllers
             using var workbook = new XLWorkbook();
             var worksheet = workbook.Worksheets.Add("khám sức khỏe");
 
-            worksheet.Range("A1:J1").Merge();
+            worksheet.Range("A1:L1").Merge();
             worksheet.Cell("A1").Value = "DANH SÁCH KHÁM SỨC KHỎE";
             worksheet.Cell("A1").Style.Font.Bold = true;
             worksheet.Cell("A1").Style.Font.FontSize = 16;
@@ -301,7 +303,7 @@ namespace backend.Controllers
                 XLAlignmentVerticalValues.Center;
             worksheet.Row(1).Height = 28;
 
-            worksheet.Range("A2:J2").Merge();
+            worksheet.Range("A2:L2").Merge();
             worksheet.Cell("A2").Value =
                 $"Ngày xuất: {DateTime.Now:dd/MM/yyyy HH:mm}";
             worksheet.Cell("A2").Style.Font.Italic = true;
@@ -321,7 +323,7 @@ namespace backend.Controllers
                 "Nghề nghiệp"
             };
 
-            headers = headers.Append("Ngày sinh").ToArray();
+            headers = headers.Append("Ngày sinh").Append("Nơi khám").Append("Ngày cấp CCCD").ToArray();
 
             for (var col = 0; col < headers.Length; col++)
             {
@@ -355,6 +357,8 @@ namespace backend.Controllers
                 worksheet.Cell(rowIndex, 8).Value = customer.Address;
                 worksheet.Cell(rowIndex, 9).Value = customer.Occupation;
                 worksheet.Cell(rowIndex, 10).Value = customer.BirthDate;
+                worksheet.Cell(rowIndex, 11).Value = customer.ExaminationPlace;
+                worksheet.Cell(rowIndex, 12).Value = customer.CitizenIdIssueDate;
 
                 worksheet.Cell(rowIndex, 2).Style.NumberFormat.Format = "@";
                 worksheet.Cell(rowIndex, 4).Style.NumberFormat.Format = "@";
@@ -362,16 +366,18 @@ namespace backend.Controllers
                     "dd/MM/yyyy";
                 worksheet.Cell(rowIndex, 10).Style.DateFormat.Format =
                     "dd/MM/yyyy";
+                worksheet.Cell(rowIndex, 12).Style.DateFormat.Format =
+                    "dd/MM/yyyy";
 
-                worksheet.Range(rowIndex, 1, rowIndex, 10)
+                worksheet.Range(rowIndex, 1, rowIndex, 12)
                     .Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
 
-                worksheet.Range(rowIndex, 1, rowIndex, 10)
+                worksheet.Range(rowIndex, 1, rowIndex, 12)
                     .Style.Border.InsideBorder = XLBorderStyleValues.Thin;
 
                 if (stt % 2 == 0)
                 {
-                    worksheet.Range(rowIndex, 1, rowIndex, 10)
+                    worksheet.Range(rowIndex, 1, rowIndex, 12)
                         .Style.Fill.BackgroundColor =
                         XLColor.FromHtml("#EFF6FF");
                 }
@@ -390,11 +396,13 @@ namespace backend.Controllers
             worksheet.Column(8).Width = 42;
             worksheet.Column(9).Width = 30;
             worksheet.Column(10).Width = 15;
+            worksheet.Column(11).Width = 24;
+            worksheet.Column(12).Width = 16;
 
             worksheet.Column(8).Style.Alignment.WrapText = true;
             worksheet.SheetView.FreezeRows(4);
 
-            worksheet.Range(4, 1, rowIndex - 1, 10)
+            worksheet.Range(4, 1, rowIndex - 1, 12)
                 .SetAutoFilter();
 
             using var stream = new MemoryStream();

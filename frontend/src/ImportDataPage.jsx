@@ -233,9 +233,17 @@ function ImportDataPage() {
 
       if (header === "nam sinh") map.taxCode = index;
 
+      if (header === "ngay cap cccd" || header === "ngay cap can cuoc") {
+        map.citizenIdIssueDate = index;
+      }
+
       if (header === "ngay sinh") map.birthDate = index;
 
       if (header === "ngay kham") map.examinationDate = index;
+
+      if (header === "noi kham" || header === "dia diem kham") {
+        map.examinationPlace = index;
+      }
 
       if (header === "dia chi") map.address = index;
 
@@ -485,6 +493,11 @@ function ImportDataPage() {
 
             taxCode: birthYear,
 
+            citizenIdIssueDate:
+              columnMap.citizenIdIssueDate !== undefined
+                ? excelDateToIso(cells[columnMap.citizenIdIssueDate], use1904DateSystem)
+                : null,
+
             birthDate:
               columnMap.birthDate !== undefined
                 ? excelDateToIso(cells[columnMap.birthDate], use1904DateSystem)
@@ -494,6 +507,11 @@ function ImportDataPage() {
               cells[columnMap.examinationDate],
               use1904DateSystem
             ),
+
+            examinationPlace:
+              columnMap.examinationPlace !== undefined
+                ? normalizeText(cells[columnMap.examinationPlace])
+                : null,
 
             address:
               columnMap.address !== undefined
@@ -517,6 +535,8 @@ function ImportDataPage() {
             row.taxCode ||
             row.birthDate ||
             row.examinationDate ||
+            row.citizenIdIssueDate ||
+            row.examinationPlace ||
             row.address ||
             row.occupation
         );
@@ -569,8 +589,10 @@ function ImportDataPage() {
         objectType: row.objectType,
         phoneNumber: row.phoneNumber,
         taxCode: row.taxCode,
+        citizenIdIssueDate: row.citizenIdIssueDate || null,
         birthDate: row.birthDate || null,
         examinationDate: row.examinationDate || null,
+        examinationPlace: row.examinationPlace,
         address: row.address,
         occupation: row.occupation,
         sourceFileName: row.sourceFileName,
@@ -857,7 +879,9 @@ function ImportDataPage() {
                         <th>Đối tượng</th>
                         <th>Số điện thoại</th>
                         <th>Năm sinh</th>
+                        <th>Ngày cấp CCCD</th>
                         <th>Ngày khám</th>
+                        <th>Nơi khám</th>
                         <th>Địa chỉ</th>
                         <th>Nghề nghiệp</th>
                         <th>Trạng thái</th>
@@ -880,8 +904,12 @@ function ImportDataPage() {
                           <td className="text-center">{row.phoneNumber}</td>
                           <td className="text-center">{row.taxCode}</td>
                           <td className="text-center">
+                            {formatDateVN(row.citizenIdIssueDate)}
+                          </td>
+                          <td className="text-center">
                             {formatDateVN(row.examinationDate)}
                           </td>
+                          <td>{row.examinationPlace}</td>
                           <td>{row.address}</td>
                           <td>{row.occupation}</td>
                           <td>
@@ -1044,7 +1072,9 @@ function ImportDataPage() {
                     <th>Đối tượng</th>
                     <th>Số điện thoại</th>
                     <th>Năm sinh</th>
+                    <th>Ngày cấp CCCD</th>
                     <th>Ngày khám</th>
+                    <th>Nơi khám</th>
                     <th>Địa chỉ</th>
                     <th>Nghề nghiệp</th>
                     <th style={{ width: "100px" }}>Thao tác</th>
@@ -1062,9 +1092,13 @@ function ImportDataPage() {
                       <td className="text-center">{row.objectType}</td>
                       <td className="text-center">{row.phoneNumber}</td>
                       <td className="text-center">{row.taxCode}</td>
+                      <td className="text-center">
+                        {formatDateVN(row.citizenIdIssueDate)}
+                      </td>
                       <td className="text-center text-success fw-semibold">
                         {formatDateVN(row.examinationDate)}
                       </td>
+                      <td>{row.examinationPlace}</td>
                       <td>{row.address}</td>
                       <td>{row.occupation}</td>
                       <td className="text-center">

@@ -33,6 +33,7 @@ namespace backend.Controllers
         public async Task<IActionResult> Create(Customer customer)
         {
             customer.Code = customer.Code?.Trim() ?? string.Empty;
+            customer.ExaminationPlace = customer.ExaminationPlace?.Trim() ?? string.Empty;
             customer.Name = customer.Name?.Trim() ?? string.Empty;
             customer.TaxCode = customer.TaxCode?.Trim() ?? string.Empty;
             customer.ObjectType = customer.ObjectType?.Trim() ?? string.Empty;
@@ -40,6 +41,9 @@ namespace backend.Controllers
             customer.Address = customer.Address?.Trim() ?? string.Empty;
             customer.Occupation = customer.Occupation?.Trim() ?? string.Empty;
             customer.ExaminationDate = ToUtcDate(customer.ExaminationDate);
+            customer.CitizenIdIssueDate = customer.CitizenIdIssueDate.HasValue
+                ? ToUtcDate(customer.CitizenIdIssueDate.Value)
+                : null;
             customer.BirthDate = customer.BirthDate.HasValue
                 ? ToUtcDate(customer.BirthDate.Value)
                 : null;
@@ -102,6 +106,7 @@ namespace backend.Controllers
             }
 
             customer.Code = customer.Code?.Trim() ?? string.Empty;
+            customer.ExaminationPlace = customer.ExaminationPlace?.Trim() ?? string.Empty;
             customer.Name = customer.Name?.Trim() ?? string.Empty;
             customer.TaxCode = customer.TaxCode?.Trim() ?? string.Empty;
             customer.ObjectType = customer.ObjectType?.Trim() ?? string.Empty;
@@ -109,6 +114,9 @@ namespace backend.Controllers
             customer.Address = customer.Address?.Trim() ?? string.Empty;
             customer.Occupation = customer.Occupation?.Trim() ?? string.Empty;
             customer.ExaminationDate = ToUtcDate(customer.ExaminationDate);
+            customer.CitizenIdIssueDate = customer.CitizenIdIssueDate.HasValue
+                ? ToUtcDate(customer.CitizenIdIssueDate.Value)
+                : null;
             customer.BirthDate = customer.BirthDate.HasValue
                 ? ToUtcDate(customer.BirthDate.Value)
                 : null;
@@ -147,6 +155,7 @@ namespace backend.Controllers
             }
 
             data.Code = customer.Code;
+            data.CitizenIdIssueDate = customer.CitizenIdIssueDate;
             data.Name = customer.Name;
             data.ObjectType = customer.ObjectType;
             data.PhoneNumber = customer.PhoneNumber;
@@ -154,6 +163,7 @@ namespace backend.Controllers
             data.TaxCode = customer.TaxCode;
             data.Occupation = customer.Occupation;
             data.ExaminationDate = customer.ExaminationDate;
+            data.ExaminationPlace = customer.ExaminationPlace;
             data.BirthDate = customer.BirthDate;
 
             await _context.SaveChangesAsync();

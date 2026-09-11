@@ -11,6 +11,7 @@ namespace backend.Controllers
         public int? ExcelLine { get; set; }
 
         public string? Code { get; set; }
+        public DateTime? CitizenIdIssueDate { get; set; }
         public string? Name { get; set; }
         public string? ObjectType { get; set; }
         public string? PhoneNumber { get; set; }
@@ -21,6 +22,7 @@ namespace backend.Controllers
         public DateTime? BirthDate { get; set; }
 
         public DateTime? ExaminationDate { get; set; }
+        public string? ExaminationPlace { get; set; }
         public string? Address { get; set; }
         public string? Occupation { get; set; }
         public string? SourceFileName { get; set; }
@@ -59,12 +61,14 @@ namespace backend.Controllers
                 {
                     x.Id,
                     x.Code,
+                    x.CitizenIdIssueDate,
                     x.Name,
                     x.ObjectType,
                     x.PhoneNumber,
                     x.TaxCode,
                     x.BirthDate,
                     x.ExaminationDate,
+                    x.ExaminationPlace,
                     x.Address,
                     x.Occupation
                 })
@@ -138,11 +142,13 @@ namespace backend.Controllers
                 var excelLine = row.ExcelLine ?? (i + 6);
 
                 var code = NormalizeCitizenCode(row.Code);
+                var citizenIdIssueDate = row.CitizenIdIssueDate?.Date;
                 var name = (row.Name ?? string.Empty).Trim();
                 var objectType = (row.ObjectType ?? string.Empty).Trim();
                 var phoneNumber = (row.PhoneNumber ?? string.Empty).Trim();
                 var birthYear = (row.TaxCode ?? string.Empty).Trim();
                 var birthDate = row.BirthDate?.Date;
+                var examinationPlace = (row.ExaminationPlace ?? string.Empty).Trim();
                 var address = (row.Address ?? string.Empty).Trim();
                 var occupation = (row.Occupation ?? string.Empty).Trim();
 
@@ -180,6 +186,11 @@ namespace backend.Controllers
                 if (birthDate.HasValue && birthDate.Value > DateTime.Today)
                 {
                     rowErrors.Add("Ngày sinh không được lớn hơn ngày hiện tại");
+                }
+
+                if (citizenIdIssueDate.HasValue && citizenIdIssueDate.Value > DateTime.Today)
+                {
+                    rowErrors.Add("Ngày cấp CCCD không được lớn hơn ngày hiện tại");
                 }
 
                 if (!string.IsNullOrWhiteSpace(code))
@@ -237,6 +248,9 @@ namespace backend.Controllers
                 validCustomers.Add(new Customer
                 {
                     Code = code,
+                    CitizenIdIssueDate = citizenIdIssueDate.HasValue
+                        ? DateTime.SpecifyKind(citizenIdIssueDate.Value.Date, DateTimeKind.Utc)
+                        : null,
                     Name = name,
                     ObjectType = objectType,
                     PhoneNumber = phoneNumber,
@@ -248,6 +262,7 @@ namespace backend.Controllers
                     ExaminationDate = DateTime.SpecifyKind(
                         row.ExaminationDate!.Value.Date,
                         DateTimeKind.Utc),
+                    ExaminationPlace = examinationPlace,
                     Address = address,
                     Occupation = occupation
                 });

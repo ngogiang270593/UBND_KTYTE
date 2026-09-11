@@ -11,7 +11,7 @@ namespace backend.Controllers
     [Route("api/[controller]")]
     public class CatalogItemsController : ControllerBase
     {
-        private static readonly string[] ValidCategories = { "objectType", "occupation", "hamlet", "group" };
+        private static readonly string[] ValidCategories = { "objectType", "occupation", "hamlet", "group", "examinationPlace" };
         private static readonly string[] CategoriesWithDefault = { "objectType", "hamlet", "group" };
         private readonly AppDbContext _context;
 
