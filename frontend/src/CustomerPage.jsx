@@ -1157,6 +1157,24 @@ function CustomerPage() {
             </div>
           </form>
 
+          <div className="health-statistics-page mb-3">
+            <HealthSummaryCards
+              title="Thống kê hôm nay"
+              summary={{
+                total: todayExaminationCount,
+                under18: todayUnder18Count,
+                elderly: todayElderlyCount,
+                hamlets: todayHamletSummary.map(([label, counts]) => ({
+                  id: catalogOptions.hamlet.find((hamlet) => hamlet.name === label)?.id,
+                  label,
+                  count: counts.total,
+                  under18: counts.under18,
+                  elderly: counts.elderly,
+                })),
+              }}
+            />
+          </div>
+
           {/* TÌM KIẾM */}
           <div className="card border-0 shadow-sm mb-3">
             <div className="card-body">
@@ -1209,23 +1227,6 @@ function CustomerPage() {
             </div>
           </div>
 
-          <div className="health-statistics-page mb-3">
-            <HealthSummaryCards
-              title="Thống kê hôm nay"
-              summary={{
-                total: todayExaminationCount,
-                under18: todayUnder18Count,
-                elderly: todayElderlyCount,
-                hamlets: todayHamletSummary.map(([label, counts]) => ({
-                  id: catalogOptions.hamlet.find((hamlet) => hamlet.name === label)?.id,
-                  label,
-                  count: counts.total,
-                  under18: counts.under18,
-                  elderly: counts.elderly,
-                })),
-              }}
-            />
-          </div>
           {/* BẢNG */}
           <div
             className="table-responsive"
