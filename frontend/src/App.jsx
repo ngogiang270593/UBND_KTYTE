@@ -21,6 +21,7 @@ import CommuneSubjectListPage from "./CommuneSubjectListPage";
 import DashboardHome from "./DashboardHome";
 import HealthDataProcessingPage from "./HealthDataProcessingPage";
 import ExaminationPlacePage from "./ExaminationPlacePage";
+import HealthStatisticsPage from "./HealthStatisticsPage";
 function App() {
   const [token, setToken] = useState(sessionStorage.getItem("token"));
   const [activePage, setActivePage] = useState("dashboard");
@@ -37,7 +38,7 @@ function App() {
   }
 
   const renderPage = () => {
-    if (activePage === "dashboard") return <DashboardHome selectedModule={selectedModule} onSelectModule={setSelectedModule} />;
+    if (activePage === "dashboard") return <DashboardHome selectedModule={selectedModule} onSelectModule={(moduleId) => { setSelectedModule(moduleId); setActivePage(moduleId === "health" ? "healthStatistics" : "dashboard"); }} />;
     if (activePage === "campaignOverview") return <CampaignDashboard />;
     if (activePage === "campaignData") return <CampaignDataPage />;
     if (activePage === "customers") return <CustomerPage />;
@@ -54,6 +55,7 @@ function App() {
     if (activePage === "printTemplates") return <PrintTemplatePage />;
     if (activePage === "printVoucher") return <PrintVoucherPage />;
     if (activePage === "examinationPlace") return <ExaminationPlacePage />;
+    if (activePage === "healthStatistics") return <HealthStatisticsPage onViewPlace={(hamletId) => { sessionStorage.setItem("printVoucherHamlet", String(hamletId)); setActivePage("printVoucher"); }} />;
     if (activePage === "changePassword") return <ChangePasswordPage />;
     if (activePage === "catalog") return <CatalogPage />;
     if (activePage === "healthDataProcessing") return <HealthDataProcessingPage />;

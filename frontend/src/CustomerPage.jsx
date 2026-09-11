@@ -1,6 +1,7 @@
 import DatePicker from "react-datepicker";
 import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import api from "./api";
+import HealthSummaryCards from "./HealthSummaryCards";
 import { useNotification } from "./NotificationProvider";
 
 const createEmptyForm = () => ({
@@ -1208,60 +1209,23 @@ function CustomerPage() {
             </div>
           </div>
 
-          <div
-            className="mb-3 px-3 py-3"
-            style={{
-              background: "linear-gradient(135deg, #fffaf5, #fff4e6)",
-              border: "1px solid #fed7aa",
-              borderRadius: "14px",
-            }}
-          >
-            <div className="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3">
-              <div>
-                <div className="small fw-semibold text-uppercase" style={{ color: "#9a3412", letterSpacing: "0.04em" }}>
-                  Thống kê hôm nay
-                </div>
-                <div className="fw-semibold text-dark">Tổng hồ sơ khám trong ngày</div>
-              </div>
-              <div className="d-flex flex-wrap gap-2">
-                <div className="px-3 py-2 text-center" style={{ minWidth: "108px", background: "#fff", border: "1px solid #fed7aa", borderRadius: "10px" }}>
-                  <div className="small text-muted">Tổng hồ sơ</div>
-                  <strong style={{ color: "#c2410c", fontSize: "1.6rem", lineHeight: 1.1 }}>{todayExaminationCount}</strong>
-                </div>
-                <div className="px-3 py-2 text-center" style={{ minWidth: "108px", background: "#fff", border: "1px solid #fed7aa", borderRadius: "10px" }}>
-                  <div className="small text-muted">Dưới 18 tuổi</div>
-                  <strong style={{ color: "#0369a1", fontSize: "1.6rem", lineHeight: 1.1 }}>{todayUnder18Count}</strong>
-                </div>
-                <div className="px-3 py-2 text-center" style={{ minWidth: "108px", background: "#fff", border: "1px solid #fed7aa", borderRadius: "10px" }}>
-                  <div className="small text-muted">Người cao tuổi</div>
-                  <strong style={{ color: "#7c2d12", fontSize: "1.6rem", lineHeight: 1.1 }}>{todayElderlyCount}</strong>
-                </div>
-              </div>
-            </div>
-            {todayHamletSummary.length > 0 && (
-              <div>
-                <div className="small fw-semibold text-muted mb-2">Phân bổ theo ấp</div>
-                <div className="row g-2">
-                  {todayHamletSummary.map(([hamletName, summary]) => (
-                    <div className="col-12 col-md-6 col-xl-4" key={hamletName}>
-                      <div className="h-100 px-3 py-2" style={{ background: "rgba(255, 255, 255, 0.72)", border: "1px solid #fde1c1", borderRadius: "9px" }}>
-                        <div className="d-flex justify-content-between align-items-center gap-2">
-                          <strong className="text-dark text-truncate" title={hamletName}>{hamletName}</strong>
-                          <span className="badge rounded-pill" style={{ background: "#ffedd5", color: "#9a3412" }}>{summary.total}</span>
-                        </div>
-                        <div className="small text-muted mt-1">
-                          Dưới 18: <strong>{summary.under18}</strong>
-                          <span className="mx-2">|</span>
-                          Cao tuổi: <strong>{summary.elderly}</strong>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
+          <div className="health-statistics-page mb-3">
+            <HealthSummaryCards
+              title="Thống kê hôm nay"
+              summary={{
+                total: todayExaminationCount,
+                under18: todayUnder18Count,
+                elderly: todayElderlyCount,
+                hamlets: todayHamletSummary.map(([label, counts]) => ({
+                  id: catalogOptions.hamlet.find((hamlet) => hamlet.name === label)?.id,
+                  label,
+                  count: counts.total,
+                  under18: counts.under18,
+                  elderly: counts.elderly,
+                })),
+              }}
+            />
           </div>
-
           {/* BẢNG */}
           <div
             className="table-responsive"

@@ -4,6 +4,7 @@ export const appModules = [
     { key: "campaignData", label: "Nhập số liệu chiến dịch", icon: "📝" },
   ]},
   { id: "health", title: "Khám sức khỏe", icon: "🩺", links: [
+    { key: "healthStatistics", label: "Thống kê", icon: "📊" },
     { key: "customers", label: "Quản lý khám sức khỏe", icon: "👤" },
     { key: "importData", label: "Import dữ liệu", icon: "📥" },
     { key: "printVoucher", label: "In ấn", icon: "🖨️" },
