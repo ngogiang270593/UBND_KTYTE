@@ -171,6 +171,28 @@ using (var scope = app.Services.CreateScope())
 
     if (db.Database.IsSqlite())
     {
+    db.Database.ExecuteSqlRaw("""
+        CREATE TABLE IF NOT EXISTS TanHoaNkRecords (
+            Id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+            Cccd TEXT NULL, NgaySinh TEXT NULL, NamSinh TEXT NULL,
+            HoTen TEXT NULL, DiaChi TEXT NULL, SoTheBhyt TEXT NULL,
+            SourceFileName TEXT NULL, ImportedAt TEXT NOT NULL
+        );
+        CREATE TABLE IF NOT EXISTS TanHoaRecords (
+            Id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+            Cccd TEXT NULL, NgaySinh TEXT NULL, NamSinh TEXT NULL,
+            HoTen TEXT NULL, DiaChi TEXT NULL, SoTheBhyt TEXT NULL,
+            SourceFileName TEXT NULL, ImportedAt TEXT NOT NULL
+        );
+        CREATE TABLE IF NOT EXISTS ExaminationNumbers (
+            CustomerId INTEGER NOT NULL PRIMARY KEY,
+            ExaminationDate TEXT NOT NULL,
+            Number INTEGER NOT NULL,
+            FOREIGN KEY (CustomerId) REFERENCES Customers (Id) ON DELETE CASCADE
+        );
+        CREATE UNIQUE INDEX IF NOT EXISTS IX_ExaminationNumbers_ExaminationDate_Number
+            ON ExaminationNumbers (ExaminationDate, Number);
+        """);
     using (var command = db.Database.GetDbConnection().CreateCommand())
     {
         command.CommandText = "PRAGMA table_info('Customers');";

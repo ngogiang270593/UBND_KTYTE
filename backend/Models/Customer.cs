@@ -9,6 +9,13 @@ namespace backend.Models
     {
         public int Id { get; set; }
 
+        [NotMapped]
+        [Range(1, int.MaxValue, ErrorMessage = "STT khám phải là số nguyên dương.")]
+        public int? ExaminationSequenceNumber { get; set; }
+
+        [JsonIgnore]
+        public ExaminationNumber? ExaminationNumber { get; set; }
+
         [Required(ErrorMessage = "Căn cước là bắt buộc.")]
         public string Code { get; set; } = string.Empty;
 

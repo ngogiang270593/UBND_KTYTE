@@ -15,10 +15,13 @@ namespace backend.Data
         }
 
         public DbSet<User> Users { get; set; }
+        public DbSet<TanHoaRecord> TanHoaRecords { get; set; }
+        public DbSet<TanHoaNkRecord> TanHoaNkRecords { get; set; }
 
         public DbSet<Employee> Employees { get; set; }
 
         public DbSet<Customer> Customers { get; set; }
+        public DbSet<ExaminationNumber> ExaminationNumbers { get; set; }
 
         public DbSet<ImportedPurchaseRow> ImportedPurchaseRows { get; set; }
         public DbSet<PrintTemplate> PrintTemplates { get; set; }
@@ -63,6 +66,14 @@ namespace backend.Data
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+
+            modelBuilder.Entity<ExaminationNumber>().HasKey(x => x.CustomerId);
+            modelBuilder.Entity<ExaminationNumber>()
+                .HasIndex(x => new { x.ExaminationDate, x.Number }).IsUnique();
+            modelBuilder.Entity<Customer>()
+                .HasOne(x => x.ExaminationNumber).WithOne()
+                .HasForeignKey<ExaminationNumber>(x => x.CustomerId)
+                .OnDelete(DeleteBehavior.Cascade);
 
             modelBuilder.Entity<CatalogItem>()
                 .HasIndex(x => new { x.Category, x.Name })

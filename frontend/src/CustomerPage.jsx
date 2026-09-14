@@ -16,6 +16,7 @@ const createEmptyForm = () => ({
   group: "",
   birthDate: null,
   examinationDate: new Date(),
+  examinationSequenceNumber: "",
 });
 
 const toApiDate = (value) => {
@@ -95,6 +96,29 @@ const getHamletFromAddress = (address, hamlets) => {
 
 const PAGE_SIZE = 50;
 
+function ExaminationNumberInput({ customer, disabled, onSave }) {
+  const [value, setValue] = useState(customer.examinationSequenceNumber ?? "");
+  const [saving, setSaving] = useState(false);
+  return (
+    <form className="d-flex align-items-center gap-2 mb-2" onSubmit={async (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      if (saving) return;
+      setSaving(true);
+      try { await onSave(customer.id, value === "" ? null : Number(value)); }
+      finally { setSaving(false); }
+    }}>
+      <label htmlFor={`examination-number-${customer.id}`} className="small fw-semibold text-nowrap">STT khám:</label>
+      <input id={`examination-number-${customer.id}`} type="number" min="1" max="2147483647" step="1"
+        className="form-control form-control-sm" style={{ width: 100 }}
+        value={value} onChange={(event) => setValue(event.target.value)} disabled={disabled || saving} />
+      <button type="submit" className="btn btn-outline-primary btn-sm" disabled={disabled || saving}>
+        {saving ? "Đang lưu..." : "Lưu STT"}
+      </button>
+    </form>
+  );
+}
+
 function CustomerPage() {
   const { notify, confirm } = useNotification();
 
@@ -140,11 +164,21 @@ function CustomerPage() {
   const filteredCustomers = useMemo(() => {
     const keyword = normalizeSearchText(deferredSearchText);
 
-    if (!keyword) return customers;
+    const matchingCustomers = keyword
+      ? searchableCustomers
+          .filter(({ searchIndex }) => searchIndex.includes(keyword))
+          .map(({ customer }) => customer)
+      : customers;
 
-    return searchableCustomers
-      .filter(({ searchIndex }) => searchIndex.includes(keyword))
-      .map(({ customer }) => customer);
+    return [...matchingCustomers].sort((first, second) => {
+      const dateOrder = String(second.examinationDate ?? "").slice(0, 10)
+        .localeCompare(String(first.examinationDate ?? "").slice(0, 10));
+      if (dateOrder) return dateOrder;
+      const numberOrder = (second.examinationSequenceNumber ?? 0)
+        - (first.examinationSequenceNumber ?? 0);
+      return numberOrder || String(first.name ?? "").localeCompare(String(second.name ?? ""), "vi")
+        || first.id - second.id;
+    });
   }, [customers, deferredSearchText, searchableCustomers]);
 
   const todayDate = toApiDate(new Date());
@@ -582,11 +616,26 @@ function CustomerPage() {
     );
   };
 
+  const saveExaminationNumber = async (id, examinationSequenceNumber) => {
+    try {
+      const { data } = await api.patch(`/Customers/${id}/examination-number`, { examinationSequenceNumber });
+      setCustomers((current) => current.map((customer) => customer.id === id
+        ? { ...customer, examinationSequenceNumber: data.examinationSequenceNumber } : customer));
+      if (editingId === id) {
+        setForm((current) => ({ ...current, examinationSequenceNumber: data.examinationSequenceNumber ?? "" }));
+      }
+      notify("Đã lưu STT khám.", "success");
+    } catch (error) {
+      notify(getApiErrorMessage(error), "error");
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     const payload = {
       ...form,
+      examinationSequenceNumber: form.examinationSequenceNumber === "" ? null : Number(form.examinationSequenceNumber),
 
       code: form.code.trim(),
       name: form.name.trim(),
@@ -672,6 +721,7 @@ function CustomerPage() {
     setEditingId(customer.id);
 
     setForm({
+      examinationSequenceNumber: customer.examinationSequenceNumber ?? "",
       code: customer.code ?? "",
       name: customer.name ?? "",
       objectType:
@@ -1407,6 +1457,11 @@ function CustomerPage() {
                             }
                           </div>
 
+                          <ExaminationNumberInput
+                            key={`${customer.id}-${customer.examinationSequenceNumber ?? ""}`}
+                            customer={customer} disabled={isSaving || deletingId !== null}
+                            onSave={saveExaminationNumber}
+                          />
                           <div className="row row-cols-1 row-cols-md-2 g-1 small text-muted">
                             <div className="col">
                               <span className="fw-semibold text-body">

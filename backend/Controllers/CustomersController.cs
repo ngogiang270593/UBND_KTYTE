@@ -22,9 +22,15 @@ namespace backend.Controllers
         public async Task<IActionResult> GetAll()
         {
             var customers = await _context.Customers
+                .Include(x => x.ExaminationNumber)
                 .OrderByDescending(x => x.ExaminationDate)
+                .ThenByDescending(x => x.ExaminationNumber == null ? 0 : x.ExaminationNumber.Number)
                 .ThenBy(x => x.Name)
+                .ThenBy(x => x.Id)
                 .ToListAsync();
+
+            foreach (var customer in customers)
+                customer.ExaminationSequenceNumber = customer.ExaminationNumber?.Number;
 
             return Ok(customers);
         }
@@ -89,8 +95,11 @@ namespace backend.Controllers
                     message = "Căn cước đã tồn tại."
                 });
             }
+            if (!await SetExaminationNumber(customer, customer.ExaminationSequenceNumber))
+                return Conflict(new { message = "STT khám đã được sử dụng trong ngày này." });
             _context.Customers.Add(customer);
-            await _context.SaveChangesAsync();
+            if (!await SaveWithNumberConflictHandling())
+                return Conflict(new { message = "STT khám đã được sử dụng trong ngày này." });
 
             return Ok(customer);
         }
@@ -98,7 +107,7 @@ namespace backend.Controllers
         [HttpPut("{id:int}")]
         public async Task<IActionResult> Update(int id, Customer customer)
         {
-            var data = await _context.Customers.FindAsync(id);
+            var data = await _context.Customers.Include(x => x.ExaminationNumber).FirstOrDefaultAsync(x => x.Id == id);
 
             if (data == null)
             {
@@ -166,9 +175,31 @@ namespace backend.Controllers
             data.ExaminationPlace = customer.ExaminationPlace;
             data.BirthDate = customer.BirthDate;
 
-            await _context.SaveChangesAsync();
+            if (!await SetExaminationNumber(data, customer.ExaminationSequenceNumber))
+                return Conflict(new { message = "STT khám đã được sử dụng trong ngày này." });
+            if (!await SaveWithNumberConflictHandling())
+                return Conflict(new { message = "STT khám đã được sử dụng trong ngày này." });
+            data.ExaminationSequenceNumber = data.ExaminationNumber?.Number;
 
             return Ok(data);
+        }
+
+        public class ExaminationNumberRequest
+        {
+            [System.ComponentModel.DataAnnotations.Range(1, int.MaxValue)]
+            public int? ExaminationSequenceNumber { get; set; }
+        }
+
+        [HttpPatch("{id:int}/examination-number")]
+        public async Task<IActionResult> UpdateExaminationNumber(int id, ExaminationNumberRequest request)
+        {
+            var customer = await _context.Customers.Include(x => x.ExaminationNumber)
+                .FirstOrDefaultAsync(x => x.Id == id);
+            if (customer == null) return NotFound();
+            if (!await SetExaminationNumber(customer, request.ExaminationSequenceNumber)
+                || !await SaveWithNumberConflictHandling())
+                return Conflict(new { message = "STT khám đã được sử dụng trong ngày này." });
+            return Ok(new { examinationSequenceNumber = customer.ExaminationNumber?.Number });
         }
 
         [HttpDelete("{id:int}")]
@@ -185,6 +216,44 @@ namespace backend.Controllers
             await _context.SaveChangesAsync();
 
             return Ok();
+        }
+
+        private async Task<bool> SetExaminationNumber(Customer customer, int? number)
+        {
+            var date = DateTime.SpecifyKind(customer.ExaminationDate.Date, DateTimeKind.Utc);
+            if (number.HasValue && await _context.ExaminationNumbers.AnyAsync(x =>
+                x.CustomerId != customer.Id && x.ExaminationDate == date && x.Number == number.Value))
+                return false;
+
+            if (!number.HasValue)
+            {
+                if (customer.ExaminationNumber != null)
+                    _context.ExaminationNumbers.Remove(customer.ExaminationNumber);
+                customer.ExaminationNumber = null;
+            }
+            else
+            {
+                customer.ExaminationNumber ??= new ExaminationNumber();
+                customer.ExaminationNumber.ExaminationDate = date;
+                customer.ExaminationNumber.Number = number.Value;
+            }
+            return true;
+        }
+
+        private async Task<bool> SaveWithNumberConflictHandling()
+        {
+            try
+            {
+                await _context.SaveChangesAsync();
+                return true;
+            }
+            catch (DbUpdateException ex) when (
+                ex.InnerException is Npgsql.PostgresException { SqlState: "23505", ConstraintName: "IX_ExaminationNumbers_ExaminationDate_Number" }
+                || ex.InnerException is Microsoft.Data.Sqlite.SqliteException { SqliteExtendedErrorCode: 2067 } sqlite
+                    && sqlite.Message.Contains("ExaminationNumbers.ExaminationDate"))
+            {
+                return false;
+            }
         }
 
         private static DateTime ToUtcDate(DateTime value)

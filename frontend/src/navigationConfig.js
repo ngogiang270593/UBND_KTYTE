@@ -1,4 +1,10 @@
 export const appModules = [
+  { id: "tan-hoa", title: "Tân Hòa", icon: "🏡", links: [
+    { key: "tanHoaImport", label: "Import dữ liệu", icon: "📥" },
+    { key: "tanHoaInpatientList", label: "Danh sách nội trú", icon: "📋" },
+    { key: "tanHoaNkImport", label: "Import dữ liệu NK", icon: "📥" },
+    { key: "tanHoaNkList", label: "Danh sách NK", icon: "📋" },
+  ]},
   { id: "campaign", title: "Chiến dịch", icon: "📊", links: [
     { key: "campaignOverview", label: "Tổng quan chiến dịch", icon: "📈" },
     { key: "campaignData", label: "Nhập số liệu chiến dịch", icon: "📝" },

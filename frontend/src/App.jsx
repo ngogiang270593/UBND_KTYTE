@@ -1,3 +1,7 @@
+import TanHoaNkImportPage from "./TanHoaNkImportPage";
+import TanHoaNkListPage from "./TanHoaNkListPage";
+import TanHoaInpatientListPage from "./TanHoaInpatientListPage";
+import TanHoaImportPage from "./TanHoaImportPage";
 import { useState } from "react";
 import Login from "./Login";
 import AdminLayout from "./AdminLayout";
@@ -38,6 +42,10 @@ function App() {
   }
 
   const renderPage = () => {
+    if (activePage === "tanHoaNkImport") return <TanHoaNkImportPage />;
+    if (activePage === "tanHoaNkList") return <TanHoaNkListPage />;
+    if (activePage === "tanHoaInpatientList") return <TanHoaInpatientListPage />;
+    if (activePage === "tanHoaImport") return <TanHoaImportPage />;
     if (activePage === "dashboard") return <DashboardHome selectedModule={selectedModule} onSelectModule={(moduleId) => { setSelectedModule(moduleId); setActivePage(moduleId === "health" ? "healthStatistics" : "dashboard"); }} />;
     if (activePage === "campaignOverview") return <CampaignDashboard />;
     if (activePage === "campaignData") return <CampaignDataPage />;
