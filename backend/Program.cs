@@ -172,6 +172,18 @@ using (var scope = app.Services.CreateScope())
     if (db.Database.IsSqlite())
     {
     db.Database.ExecuteSqlRaw("""
+        CREATE TABLE IF NOT EXISTS TanHoaAdmissionTcRecords (
+            Id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+            Stt TEXT NULL, HoTen TEXT NULL, SoTheBhyt TEXT NULL, NamSinh TEXT NULL,
+            GioiTinh TEXT NULL, NgheNghiep TEXT NULL, DiaChi TEXT NULL, ChanDoanVaoVien TEXT NULL,
+            SourceFileName TEXT NULL, ImportedAt TEXT NOT NULL
+        );
+        CREATE TABLE IF NOT EXISTS TanHoaPaidKskRecords (
+            Id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+            Stt TEXT NULL, HoTen TEXT NULL, NamSinh TEXT NULL,
+            GioiTinh TEXT NULL, Cccd TEXT NULL, DiaChi TEXT NULL,
+            SourceFileName TEXT NULL, ImportedAt TEXT NOT NULL
+        );
         CREATE TABLE IF NOT EXISTS TanHoaNkRecords (
             Id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
             Cccd TEXT NULL, NgaySinh TEXT NULL, NamSinh TEXT NULL,

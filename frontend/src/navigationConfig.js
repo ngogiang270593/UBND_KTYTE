@@ -4,6 +4,10 @@ export const appModules = [
     { key: "tanHoaInpatientList", label: "Danh sách nội trú", icon: "📋" },
     { key: "tanHoaNkImport", label: "Import dữ liệu NK", icon: "📥" },
     { key: "tanHoaNkList", label: "Danh sách NK", icon: "📋" },
+    { key: "tanHoaPaidKskImport", label: "Import KSK (đóng phí)", icon: "📥" },
+    { key: "tanHoaPaidKskList", label: "Danh sách KSK (đóng phí)", icon: "📋" },
+    { key: "tanHoaAdmissionTcImport", label: "Import nhập viện TC", icon: "📥" },
+    { key: "tanHoaAdmissionTcList", label: "DS nhập viện TC", icon: "📋" },
   ]},
   { id: "campaign", title: "Chiến dịch", icon: "📊", links: [
     { key: "campaignOverview", label: "Tổng quan chiến dịch", icon: "📈" },

@@ -17,6 +17,8 @@ namespace backend.Data
         public DbSet<User> Users { get; set; }
         public DbSet<TanHoaRecord> TanHoaRecords { get; set; }
         public DbSet<TanHoaNkRecord> TanHoaNkRecords { get; set; }
+        public DbSet<TanHoaPaidKskRecord> TanHoaPaidKskRecords { get; set; }
+        public DbSet<TanHoaAdmissionTcRecord> TanHoaAdmissionTcRecords { get; set; }
 
         public DbSet<Employee> Employees { get; set; }
 

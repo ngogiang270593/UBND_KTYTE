@@ -1,3 +1,7 @@
+import TanHoaAdmissionTcListPage from "./TanHoaAdmissionTcListPage";
+import TanHoaAdmissionTcImportPage from "./TanHoaAdmissionTcImportPage";
+import TanHoaPaidKskListPage from "./TanHoaPaidKskListPage";
+import TanHoaPaidKskImportPage from "./TanHoaPaidKskImportPage";
 import TanHoaNkImportPage from "./TanHoaNkImportPage";
 import TanHoaNkListPage from "./TanHoaNkListPage";
 import TanHoaInpatientListPage from "./TanHoaInpatientListPage";
@@ -42,6 +46,10 @@ function App() {
   }
 
   const renderPage = () => {
+    if (activePage === "tanHoaAdmissionTcList") return <TanHoaAdmissionTcListPage />;
+    if (activePage === "tanHoaAdmissionTcImport") return <TanHoaAdmissionTcImportPage />;
+    if (activePage === "tanHoaPaidKskList") return <TanHoaPaidKskListPage />;
+    if (activePage === "tanHoaPaidKskImport") return <TanHoaPaidKskImportPage />;
     if (activePage === "tanHoaNkImport") return <TanHoaNkImportPage />;
     if (activePage === "tanHoaNkList") return <TanHoaNkListPage />;
     if (activePage === "tanHoaInpatientList") return <TanHoaInpatientListPage />;
