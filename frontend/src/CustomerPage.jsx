@@ -1,6 +1,7 @@
 import DatePicker from "react-datepicker";
 import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import api from "./api";
+import TablePagination from "./TablePagination";
 import HealthSummaryCards from "./HealthSummaryCards";
 import { useNotification } from "./NotificationProvider";
 
@@ -94,7 +95,7 @@ const getHamletFromAddress = (address, hamlets) => {
     )[0]?.name ?? "Chưa xác định";
 };
 
-const PAGE_SIZE = 50;
+
 
 function ExaminationNumberInput({ customer, disabled, onSave }) {
   const [value, setValue] = useState(customer.examinationSequenceNumber ?? "");
@@ -131,7 +132,8 @@ function CustomerPage() {
   const [searchText, setSearchText] = useState("");
   const deferredSearchText = useDeferredValue(searchText);
 
-  const [currentPage, setCurrentPage] = useState(1);
+  const [requestedPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   const [catalogOptions, setCatalogOptions] = useState({
     objectType: [],
@@ -274,27 +276,23 @@ function CustomerPage() {
 
   const totalPages = Math.max(
     1,
-    Math.ceil(filteredCustomers.length / PAGE_SIZE)
+    Math.ceil(filteredCustomers.length / pageSize)
   );
 
+  const currentPage = Math.min(requestedPage, totalPages);
+
   const paginatedCustomers = useMemo(() => {
-    const startIndex = (currentPage - 1) * PAGE_SIZE;
+    const startIndex = (currentPage - 1) * pageSize;
 
     return filteredCustomers.slice(
       startIndex,
-      startIndex + PAGE_SIZE
+      startIndex + pageSize
     );
-  }, [currentPage, filteredCustomers]);
+  }, [currentPage, filteredCustomers, pageSize]);
 
   useEffect(() => {
     setCurrentPage(1);
   }, [searchText]);
-
-  useEffect(() => {
-    if (currentPage > totalPages) {
-      setCurrentPage(totalPages);
-    }
-  }, [currentPage, totalPages]);
 
   const focusFirstInput = () => {
     requestAnimationFrame(() => codeInputRef.current?.focus());
@@ -417,39 +415,100 @@ function CustomerPage() {
   // TỰ ĐỘNG ĐỔI ĐỐI TƯỢNG KHI NHẬP NĂM SINH
   // CHỈ ÁP DỤNG KHI THÊM MỚI
   // =====================================================
+  const getAgeInYears = (birthDate, examinationDate) => {
+    if (!(birthDate instanceof Date) || Number.isNaN(birthDate.getTime()) || !(examinationDate instanceof Date) || Number.isNaN(examinationDate.getTime())) {
+      return null;
+    }
+
+    const birth = new Date(birthDate.getFullYear(), birthDate.getMonth(), birthDate.getDate());
+    const examination = new Date(examinationDate.getFullYear(), examinationDate.getMonth(), examinationDate.getDate());
+
+    if (birth > examination) {
+      return null;
+    }
+
+    let age = examination.getFullYear() - birth.getFullYear();
+
+    if (
+      examination.getMonth() < birth.getMonth() ||
+      (examination.getMonth() === birth.getMonth() && examination.getDate() < birth.getDate())
+    ) {
+      age -= 1;
+    }
+
+    return age;
+  };
+
+  const getAutoObjectType = (birthDate, examinationDate, birthYear) => {
+    const resolvedBirthDate = birthDate instanceof Date && !Number.isNaN(birthDate.getTime())
+      ? birthDate
+      : (birthYear && Number.isFinite(Number(birthYear)) ? new Date(Number(birthYear), 0, 1) : null);
+
+    const resolvedExaminationDate = examinationDate instanceof Date && !Number.isNaN(examinationDate.getTime())
+      ? examinationDate
+      : null;
+
+    if (!resolvedBirthDate || !resolvedExaminationDate) {
+      return null;
+    }
+
+    const age = getAgeInYears(resolvedBirthDate, resolvedExaminationDate);
+
+    if (age === null) {
+      return null;
+    }
+
+    if (age >= 60) {
+      return "NGƯỜI CAO TUỔI";
+    }
+
+    if (age < 18) {
+      return "DƯỚI 18";
+    }
+
+    return null;
+  };
+
   const handleBirthYearBlur = () => {
     setForm((prevForm) => {
-      // Khi sửa hồ sơ:
-      // không tự động thay đổi đối tượng
       if (editingId !== null) {
         return prevForm;
       }
 
-      const birthYear = Number(prevForm.taxCode);
+      const autoObjectType = getAutoObjectType(
+        prevForm.birthDate,
+        prevForm.examinationDate,
+        prevForm.taxCode
+      );
 
-      if (
-        prevForm.taxCode !== "" &&
-        Number.isFinite(birthYear) &&
-        birthYear <= 1966
-      ) {
-        return {
-          ...prevForm,
-          objectType: "NGƯỜI CAO TUỔI",
-        };
+      if (!autoObjectType) {
+        return prevForm;
       }
 
-      return prevForm;
+      return {
+        ...prevForm,
+        objectType: autoObjectType,
+      };
     });
   };
 
   const handleBirthDateChange = (date) => {
-    setForm((prevForm) => ({
-      ...prevForm,
-      birthDate: date,
-      taxCode: date
-        ? String(date.getFullYear())
-        : prevForm.taxCode,
-    }));
+    setForm((prevForm) => {
+      const nextForm = {
+        ...prevForm,
+        birthDate: date,
+        taxCode: date
+          ? String(date.getFullYear())
+          : prevForm.taxCode,
+      };
+
+      if (editingId !== null) {
+        return nextForm;
+      }
+
+      const autoObjectType = getAutoObjectType(nextForm.birthDate, nextForm.examinationDate, nextForm.taxCode);
+      return autoObjectType ? { ...nextForm, objectType: autoObjectType } : nextForm;
+    });
   };
 
   const handleBirthDateRawChange = (event) => {
@@ -1105,13 +1164,19 @@ function CustomerPage() {
                     form.examinationDate
                   }
                   onChange={(date) =>
-                    setForm(
-                      (prevForm) => ({
+                    setForm((prevForm) => {
+                      const nextForm = {
                         ...prevForm,
-                        examinationDate:
-                          date,
-                      })
-                    )
+                        examinationDate: date,
+                      };
+
+                      if (editingId !== null) {
+                        return nextForm;
+                      }
+
+                      const autoObjectType = getAutoObjectType(nextForm.birthDate, nextForm.examinationDate, nextForm.taxCode);
+                      return autoObjectType ? { ...nextForm, objectType: autoObjectType } : nextForm;
+                    })
                   }
                   dateFormat="dd/MM/yyyy"
                   className="form-control"
@@ -1425,7 +1490,7 @@ function CustomerPage() {
                         <td className="text-center">
                           {(currentPage -
                             1) *
-                            PAGE_SIZE +
+                            pageSize +
                             index +
                             1}
                         </td>
@@ -1545,87 +1610,13 @@ function CustomerPage() {
             </table>
           </div>
 
-          {/* PHÂN TRANG */}
-          {filteredCustomers.length >
-            PAGE_SIZE && (
-            <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 mt-3">
-              <span className="text-muted">
-                Hiển thị{" "}
-                {(currentPage -
-                  1) *
-                  PAGE_SIZE +
-                  1}
-                -
-                {Math.min(
-                  currentPage *
-                    PAGE_SIZE,
-                  filteredCustomers.length
-                )}{" "}
-                /{" "}
-                {
-                  filteredCustomers.length
-                }{" "}
-                dòng
-              </span>
-
-              <div
-                className="btn-group"
-                role="group"
-                aria-label="Phân trang"
-              >
-                <button
-                  type="button"
-                  className="btn btn-outline-secondary"
-                  onClick={() =>
-                    setCurrentPage(
-                      (page) =>
-                        Math.max(
-                          1,
-                          page - 1
-                        )
-                    )
-                  }
-                  disabled={
-                    currentPage ===
-                    1
-                  }
-                >
-                  Trước
-                </button>
-
-                <span className="btn btn-outline-secondary disabled">
-                  Trang{" "}
-                  {
-                    currentPage
-                  }
-                  /
-                  {
-                    totalPages
-                  }
-                </span>
-
-                <button
-                  type="button"
-                  className="btn btn-outline-secondary"
-                  onClick={() =>
-                    setCurrentPage(
-                      (page) =>
-                        Math.min(
-                          totalPages,
-                          page + 1
-                        )
-                    )
-                  }
-                  disabled={
-                    currentPage ===
-                    totalPages
-                  }
-                >
-                  Sau
-                </button>
-              </div>
-            </div>
-          )}
+          <TablePagination
+            total={filteredCustomers.length}
+            page={currentPage}
+            pageSize={pageSize}
+            onPageChange={setCurrentPage}
+            onPageSizeChange={(size) => { setPageSize(size); setCurrentPage(1); }}
+          />
         </div>
       </div>
     </div>

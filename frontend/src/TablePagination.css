@@ -1,0 +1,17 @@
+﻿.table-pagination { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:16px 24px; padding:20px 12px; margin-top:12px; background:#e8e8e8; color:#292929; border-radius:0 0 12px 12px; font-size:16px; }
+.table-pagination-summary { white-space:nowrap; }
+.table-pagination-size { min-width:180px; padding:12px 40px 12px 18px; border:1px solid #e5e5e5; border-radius:18px; background-color:#fff; color:inherit; box-shadow:0 2px 3px #00000012; cursor:pointer; }
+.table-pagination-pages { display:flex; flex-wrap:nowrap; align-items:stretch; overflow:hidden; border:1px solid #ddd; border-radius:18px; background:#fff; box-shadow:0 2px 3px #0000000d; }
+.table-pagination-pages button, .table-pagination-ellipsis { display:flex; align-items:center; justify-content:center; min-width:48px; height:52px; padding:0 10px; border:0; border-right:1px solid #e2e2e2; background:#fff; color:inherit; font:inherit; }
+.table-pagination-pages button:last-child { border-right:0; }
+.table-pagination-pages button.is-current { background:#d4d4d4; }
+.table-pagination-pages button:hover:not(:disabled) { background:#ededed; }
+.table-pagination-pages button:disabled { color:#b3b3b3; cursor:not-allowed; }
+.table-pagination-pages button:focus-visible { outline:3px solid #2563eb; outline-offset:-3px; }
+.table-pagination-size:focus-visible { outline:3px solid #2563eb; outline-offset:2px; }
+@media(max-width:700px) {
+  .table-pagination { gap:12px; font-size:14px; }
+  .table-pagination-size { min-width:140px; }
+  .table-pagination-pages { max-width:100%; overflow-x:auto; }
+  .table-pagination-pages button, .table-pagination-ellipsis { min-width:36px; height:44px; padding:0 7px; }
+}

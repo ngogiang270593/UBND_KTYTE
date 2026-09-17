@@ -1,25 +1,22 @@
 export const appModules = [
-  { id: "tan-hoa", title: "Tân Hòa", icon: "🏡", links: [
-    { key: "tanHoaImport", label: "Import dữ liệu", icon: "📥" },
-    { key: "tanHoaInpatientList", label: "Danh sách nội trú", icon: "📋" },
-    { key: "tanHoaNkImport", label: "Import dữ liệu NK", icon: "📥" },
-    { key: "tanHoaNkList", label: "Danh sách NK", icon: "📋" },
-    { key: "tanHoaPaidKskImport", label: "Import KSK (đóng phí)", icon: "📥" },
-    { key: "tanHoaPaidKskList", label: "Danh sách KSK (đóng phí)", icon: "📋" },
-    { key: "tanHoaAdmissionTcImport", label: "Import nhập viện TC", icon: "📥" },
-    { key: "tanHoaAdmissionTcList", label: "DS nhập viện TC", icon: "📋" },
+  { id: "health", title: "Khám sức khỏe", icon: "🩺", links: [
+    { key: "customers", label: "Nhập khám sức khỏe", icon: "👤" },
+    { key: "importData", label: "Import dữ liệu", icon: "📥" },
+    { key: "printVoucher", label: "Danh sách khám", icon: "📋" },
+    { key: "healthStatistics", label: "Thống kê", icon: "📊" },
+    { key: "healthObjectStatistics", label: "TK Đối tượng", icon: "👥" },
+    { key: "examinationPlace", label: "TK Nơi khám", icon: "🏥" },
+    { key: "catalog", label: "Danh mục", icon: "📚" },
   ]},
   { id: "campaign", title: "Chiến dịch", icon: "📊", links: [
     { key: "campaignOverview", label: "Tổng quan chiến dịch", icon: "📈" },
     { key: "campaignData", label: "Nhập số liệu chiến dịch", icon: "📝" },
   ]},
-  { id: "health", title: "Khám sức khỏe", icon: "🩺", links: [
-    { key: "healthStatistics", label: "Thống kê", icon: "📊" },
-    { key: "customers", label: "Quản lý khám sức khỏe", icon: "👤" },
-    { key: "importData", label: "Import dữ liệu", icon: "📥" },
-    { key: "printVoucher", label: "In ấn", icon: "🖨️" },
-    { key: "examinationPlace", label: "Nơi khám", icon: "🏥" },
-    { key: "catalog", label: "Danh mục", icon: "📚" },
+  { id: "data-processing", title: "Xử lý data", icon: "🧹", links: [
+    { key: "healthDataProcessing", label: "Data khám sức khỏe", icon: "🩺" },
+  ]},
+  { id: "stats", title: "Thống kê", icon: "📉", links: [
+    { key: "consolidatedList", label: "Tổng hợp danh sách", icon: "📊" },
   ]},
   { id: "hospital", title: "Tân Châu", icon: "🏥", links: [
     { key: "tanChauInpatientImport", label: "Import nội trú", icon: "📥" },
@@ -35,11 +32,15 @@ export const appModules = [
     { key: "communeSubjectImport", label: "Import đối tượng xã", icon: "📥" },
     { key: "communeSubjectList", label: "Danh sách đối tượng xã", icon: "📋" },
   ]},
-  { id: "stats", title: "Thống kê", icon: "📉", links: [
-    { key: "consolidatedList", label: "Tổng hợp danh sách", icon: "📊" },
-  ]},
-  { id: "data-processing", title: "Xử lý data", icon: "🧹", links: [
-    { key: "healthDataProcessing", label: "Data khám sức khỏe", icon: "🩺" },
+  { id: "tan-hoa", title: "Tân Hòa", icon: "🏡", links: [
+    { key: "tanHoaImport", label: "Import dữ liệu", icon: "📥" },
+    { key: "tanHoaInpatientList", label: "Danh sách nội trú", icon: "📋" },
+    { key: "tanHoaNkImport", label: "Import dữ liệu NK", icon: "📥" },
+    { key: "tanHoaNkList", label: "Danh sách NK", icon: "📋" },
+    { key: "tanHoaPaidKskImport", label: "Import KSK (đóng phí)", icon: "📥" },
+    { key: "tanHoaPaidKskList", label: "Danh sách KSK (đóng phí)", icon: "📋" },
+    { key: "tanHoaAdmissionTcImport", label: "Import nhập viện TC", icon: "📥" },
+    { key: "tanHoaAdmissionTcList", label: "DS nhập viện TC", icon: "📋" },
   ]},
 ];
 

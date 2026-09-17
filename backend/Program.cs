@@ -404,7 +404,7 @@ using (var scope = app.Services.CreateScope())
 
     var catalogDefaults = new Dictionary<string, string[]>
     {
-        ["objectType"] = new[] { "CÔNG CHỨC", "DÂN QUÂN", "GIÁO VIÊN", "NGƯỜI CAO TUỔI", "NGƯỜI DÂN", "THƯƠNG BINH", "KHUYẾT TẬT" },
+        ["objectType"] = new[] { "CÔNG CHỨC", "DÂN QUÂN", "GIÁO VIÊN", "NGƯỜI CAO TUỔI", "DƯỚI 18", "NGƯỜI DÂN", "THƯƠNG BINH", "KHUYẾT TẬT" },
         ["occupation"] = new[] { "NÔNG DÂN", "CÔNG NHÂN", "BUÔN BÁN", "KINH DOANH", "CÁN BỘ, CÔNG CHỨC", "VIÊN CHỨC", "GIÁO VIÊN", "LAO ĐỘNG TỰ DO", "NỘI TRỢ", "HỌC SINH, SINH VIÊN" },
         ["examinationPlace"] = new[] { "TRẠM Y TẾ XÃ", "TRUNG TÂM Y TẾ HUYỆN", "BỆNH VIỆN ĐA KHOA", "TỰ NGUYỆN", "NƠI KHÁC" }
     };

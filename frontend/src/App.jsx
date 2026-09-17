@@ -30,10 +30,13 @@ import DashboardHome from "./DashboardHome";
 import HealthDataProcessingPage from "./HealthDataProcessingPage";
 import ExaminationPlacePage from "./ExaminationPlacePage";
 import HealthStatisticsPage from "./HealthStatisticsPage";
+import HealthObjectStatisticsPage from "./HealthObjectStatisticsPage";
 function App() {
   const [token, setToken] = useState(sessionStorage.getItem("token"));
   const [activePage, setActivePage] = useState("dashboard");
   const [selectedModule, setSelectedModule] = useState(null);
+  const [selectedObjectType, setSelectedObjectType] = useState(null);
+  const [selectedExaminationPlace, setSelectedExaminationPlace] = useState(null);
 
   const logout = () => {
     sessionStorage.clear();
@@ -54,9 +57,10 @@ function App() {
     if (activePage === "tanHoaNkList") return <TanHoaNkListPage />;
     if (activePage === "tanHoaInpatientList") return <TanHoaInpatientListPage />;
     if (activePage === "tanHoaImport") return <TanHoaImportPage />;
-    if (activePage === "dashboard") return <DashboardHome selectedModule={selectedModule} onSelectModule={(moduleId) => { setSelectedModule(moduleId); setActivePage(moduleId === "health" ? "healthStatistics" : "dashboard"); }} />;
+    if (activePage === "dashboard") return <DashboardHome selectedModule={selectedModule} onSelectModule={(moduleId) => { setSelectedModule(moduleId); setActivePage(moduleId === "health" ? "customers" : "dashboard"); }} />;
     if (activePage === "campaignOverview") return <CampaignDashboard />;
     if (activePage === "campaignData") return <CampaignDataPage />;
+    if (activePage === "healthObjectStatistics") return <HealthObjectStatisticsPage key={selectedObjectType ?? "total"} initialObjectType={selectedObjectType} />;
     if (activePage === "customers") return <CustomerPage />;
     if (activePage === "importData") return <ImportDataPage />;
     if (activePage === "communeSubjectImport") return <CommuneSubjectImportPage />;
@@ -70,8 +74,8 @@ function App() {
     if (activePage === "consolidatedList") return <ConsolidatedListPage />;
     if (activePage === "printTemplates") return <PrintTemplatePage />;
     if (activePage === "printVoucher") return <PrintVoucherPage />;
-    if (activePage === "examinationPlace") return <ExaminationPlacePage />;
-    if (activePage === "healthStatistics") return <HealthStatisticsPage onViewPlace={(hamletId) => { sessionStorage.setItem("printVoucherHamlet", String(hamletId)); setActivePage("printVoucher"); }} />;
+    if (activePage === "examinationPlace") return <ExaminationPlacePage key={selectedExaminationPlace === null ? "total" : `place:${selectedExaminationPlace}`} initialPlace={selectedExaminationPlace} />;
+    if (activePage === "healthStatistics") return <HealthStatisticsPage onViewExaminationPlace={(place) => { setSelectedExaminationPlace(place); setActivePage("examinationPlace"); }} onViewObject={(objectType) => { setSelectedObjectType(objectType); setActivePage("healthObjectStatistics"); }} onViewPlace={(hamletId) => { sessionStorage.setItem("printVoucherHamlet", String(hamletId)); setActivePage("printVoucher"); }} />;
     if (activePage === "changePassword") return <ChangePasswordPage />;
     if (activePage === "catalog") return <CatalogPage />;
     if (activePage === "healthDataProcessing") return <HealthDataProcessingPage />;
@@ -85,7 +89,7 @@ function App() {
   return (
     <AdminLayout
       activePage={activePage}
-      setActivePage={setActivePage}
+      setActivePage={(page) => { setSelectedExaminationPlace(null); setSelectedObjectType(null); setActivePage(page); }}
       selectedModule={selectedModule}
       setSelectedModule={setSelectedModule}
       onLogout={logout}

@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import * as XLSX from "xlsx";
 import api from "./api";
+import TablePagination from "./TablePagination";
+import { groupHealthRecords } from "./healthObjectStatistics";
 
 const normalize = (value) => String(value ?? "").trim().toLocaleLowerCase("vi-VN");
 
@@ -10,15 +12,17 @@ const formatDate = (value) => {
   return year && month && day ? `${day}/${month}/${year}` : String(value);
 };
 
-function ExaminationPlacePage() {
+function ExaminationPlacePage({ initialPlace = null }) {
   const [customers, setCustomers] = useState([]);
   const [places, setPlaces] = useState([]);
-  const [activeTab, setActiveTab] = useState("all");
+  const [activeTab, setActiveTab] = useState(initialPlace);
   const [keyword, setKeyword] = useState("");
   const [appliedKeyword, setAppliedKeyword] = useState("");
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
   const [message, setMessage] = useState("");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   const loadData = async () => {
     setLoading(true);
@@ -41,32 +45,30 @@ function ExaminationPlacePage() {
     Promise.resolve().then(loadData);
   }, []);
 
-  const tabs = useMemo(
-    () => [{ key: "all", label: "Tổng" }, ...places.map((place) => ({ key: String(place.id), label: place.name }))],
-    [places]
-  );
-
-  const activePlace = places.find((place) => String(place.id) === activeTab);
+  const groups = useMemo(() => groupHealthRecords(customers, places, "examinationPlace", true), [customers, places]);
+  const tabs = [{ key: null, label: "Tổng", records: customers }, ...groups];
+  const activePlace = groups.find((place) => place.key === activeTab);
+  const selectedTab = activePlace ? activePlace.key : null;
   const filteredRows = useMemo(() => {
     const search = normalize(appliedKeyword);
-    return customers.filter((customer) => {
-      const placeMatches = activeTab === "all"
-        ? true
-        : normalize(customer.examinationPlace) === normalize(activePlace?.name);
-      if (!placeMatches) return false;
-      if (!search) return true;
-      return normalize([
-        customer.code,
-        customer.name,
-        customer.examinationPlace,
-        customer.objectType,
-        customer.address,
-        customer.occupation,
-      ].join(" ")).includes(search);
-    });
-  }, [activePlace, activeTab, appliedKeyword, customers]);
+    const records = activePlace ? activePlace.records : customers;
+    return records.filter((customer) => !search || normalize([
+      customer.code,
+      customer.name,
+      customer.examinationPlace,
+      customer.objectType,
+      customer.address,
+      customer.occupation,
+    ].join(" ")).includes(search));
+  }, [activePlace, appliedKeyword, customers]);
+  const searchRows = () => {
+    setAppliedKeyword(keyword.trim());
+    setPage(1);
+  };
 
-  const searchRows = () => setAppliedKeyword(keyword.trim());
+  const totalPages = Math.max(1, Math.ceil(filteredRows.length / pageSize));
+  const safePage = Math.min(page, totalPages);
+  const rows = filteredRows.slice((safePage - 1) * pageSize, safePage * pageSize);
 
   const exportExcel = () => {
     if (!filteredRows.length) {
@@ -98,7 +100,7 @@ function ExaminationPlacePage() {
       sheet["!autofilter"] = { ref: `A1:K${report.length + 1}` };
       const workbook = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(workbook, sheet, "Noi kham");
-      const tabName = activeTab === "all" ? "Tong" : (activePlace?.name || "Noi_kham");
+      const tabName = selectedTab === null ? "Tong" : (activePlace?.label || "Noi_kham");
       XLSX.writeFile(workbook, `Danh_sach_noi_kham_${tabName}_${new Date().toISOString().slice(0, 10)}.xlsx`);
     } finally {
       setExporting(false);
@@ -109,21 +111,22 @@ function ExaminationPlacePage() {
     <div className="container-fluid py-4">
       <div className="card border-0 shadow-sm">
         <div className="card-header bg-primary text-white p-4">
-          <h4 className="fw-bold mb-1">DANH SÁCH THEO NƠI KHÁM</h4>
+          <h4 className="fw-bold mb-1">TK Nơi khám</h4>
           <div className="opacity-75">Tìm kiếm và xuất danh sách theo từng nơi khám.</div>
         </div>
         <div className="card-body p-4">
-          <div className="d-flex flex-wrap gap-2 mb-4" role="tablist" aria-label="Nơi khám">
+          <div className="d-flex flex-wrap gap-2 mb-4" role="group" aria-label="TK Nơi khám">
             {tabs.map((tab) => (
               <button
-                key={tab.key}
+                key={tab.key === null ? "total" : `place:${tab.key}`}
                 type="button"
-                className={`btn ${activeTab === tab.key ? "btn-primary" : "btn-outline-primary"}`}
-                onClick={() => setActiveTab(tab.key)}
+                className={`btn ${selectedTab === tab.key ? "btn-primary" : "btn-outline-primary"}`}
+                aria-pressed={selectedTab === tab.key}
+                onClick={() => { setActiveTab(tab.key); setPage(1); }}
               >
                 {tab.label}
                 <span className="badge bg-light text-primary ms-2">
-                  {tab.key === "all" ? customers.length : customers.filter((customer) => normalize(customer.examinationPlace) === normalize(tab.label)).length}
+                  {tab.records.length.toLocaleString("vi-VN")}
                 </span>
               </button>
             ))}
@@ -159,9 +162,9 @@ function ExaminationPlacePage() {
                 <tr><th>STT</th><th>Căn cước</th><th>Ngày cấp CCCD</th><th>Họ và tên</th><th>Năm sinh</th><th>Ngày khám</th><th>Nơi khám</th><th>Đối tượng</th><th>Địa chỉ</th></tr>
               </thead>
               <tbody>
-                {filteredRows.map((customer, index) => (
+                {rows.map((customer, index) => (
                   <tr key={customer.id}>
-                    <td className="text-center">{index + 1}</td>
+                    <td className="text-center">{(safePage - 1) * pageSize + index + 1}</td>
                     <td className="text-center fw-semibold">{customer.code}</td>
                     <td className="text-center">{formatDate(customer.citizenIdIssueDate)}</td>
                     <td className="fw-semibold">{customer.name}</td>
@@ -176,6 +179,7 @@ function ExaminationPlacePage() {
               </tbody>
             </table>
           </div>
+          <TablePagination total={filteredRows.length} page={safePage} pageSize={pageSize} onPageChange={setPage} onPageSizeChange={(size) => { setPageSize(size); setPage(1); }} disabled={loading} />
         </div>
       </div>
     </div>
