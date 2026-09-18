@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import * as XLSX from "xlsx";
 import api from "./api";
 import { useNotification } from "./NotificationProvider";
 
@@ -14,6 +15,7 @@ const categoriesWithDefault = ["objectType", "hamlet", "group"];
 
 function CatalogPage() {
   const { confirm, notify } = useNotification();
+  const importInputRef = useRef(null);
   const [category, setCategory] = useState("objectType");
   const [items, setItems] = useState([]);
   const [keyword, setKeyword] = useState("");
@@ -21,6 +23,8 @@ function CatalogPage() {
   const [isDefault, setIsDefault] = useState(false);
   const [editing, setEditing] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const [importing, setImporting] = useState(false);
 
   const current = catalogs.find((item) => item.key === category);
 
@@ -77,6 +81,79 @@ function CatalogPage() {
     }
   };
 
+  const exportAll = async () => {
+    setExporting(true);
+    try {
+      const responses = await Promise.all(catalogs.map((item) => api.get("/CatalogItems", { params: { category: item.key } })));
+      const workbook = XLSX.utils.book_new();
+      catalogs.forEach((catalog, index) => {
+        const rows = Array.isArray(responses[index].data) ? responses[index].data : [];
+        const sheet = XLSX.utils.json_to_sheet(rows.map((item, rowIndex) => ({
+          "STT": rowIndex + 1,
+          "Tên danh mục": item.name,
+          "Mặc định": item.isDefault ? "Có" : "Không",
+        })));
+        sheet["!cols"] = [{ wch: 8 }, { wch: 35 }, { wch: 14 }];
+        XLSX.utils.book_append_sheet(workbook, sheet, catalog.label.slice(0, 31));
+      });
+      XLSX.writeFile(workbook, `Danh_muc_kham_suc_khoe_${new Date().toISOString().slice(0, 10)}.xlsx`);
+      notify("Đã xuất toàn bộ danh mục ra Excel.", "success");
+    } catch (error) {
+      notify(error.response?.data?.message || "Không thể xuất toàn bộ danh mục.", "error");
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const normalizeImportValue = (value) => String(value ?? "").trim();
+
+  const importAll = async (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+
+    setImporting(true);
+    try {
+      const workbook = XLSX.read(await file.arrayBuffer(), { type: "array", cellDates: false });
+      const rowsByCategory = new Map();
+      catalogs.forEach((catalog) => {
+        const sheet = workbook.Sheets[catalog.label] || workbook.Sheets[catalog.key];
+        if (!sheet) return;
+        const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "", raw: false });
+        rowsByCategory.set(catalog.key, rows.slice(1).map((row) => ({
+          name: normalizeImportValue(row[1]),
+          isDefault: normalizeImportValue(row[2]).toLowerCase() === "có",
+        })).filter((row) => row.name));
+      });
+
+      if (!rowsByCategory.size) throw new Error("File không có sheet danh mục hợp lệ.");
+
+      const existingResponses = await Promise.all(catalogs.map((item) => api.get("/CatalogItems", { params: { category: item.key } })));
+      const existingByCategory = new Map(catalogs.map((item, index) => [item.key, new Set((existingResponses[index].data || []).map((row) => row.name.trim().toLocaleLowerCase()))]));
+      let added = 0;
+      let skipped = 0;
+      for (const catalog of catalogs) {
+        const existing = existingByCategory.get(catalog.key);
+        for (const row of rowsByCategory.get(catalog.key) || []) {
+          const normalizedName = row.name.toLocaleLowerCase();
+          if (existing.has(normalizedName)) {
+            skipped += 1;
+            continue;
+          }
+          await api.post("/CatalogItems", { category: catalog.key, name: row.name, isDefault: row.isDefault });
+          existing.add(normalizedName);
+          added += 1;
+        }
+      }
+      await load();
+      notify(`Đã nhập ${added} mục danh mục; bỏ qua ${skipped} mục đã tồn tại.`, "success");
+    } catch (error) {
+      notify(error.response?.data?.message || error.message || "Không thể nhập toàn bộ danh mục.", "error");
+    } finally {
+      setImporting(false);
+    }
+  };
+
   return (
     <div className="container-fluid py-2">
       <div className="card border-0 shadow-sm" style={{ borderRadius: "16px" }}>
@@ -85,6 +162,15 @@ function CatalogPage() {
           <small>Thêm, tìm kiếm, sửa và xóa danh mục dùng cho khám sức khỏe</small>
         </div>
         <div className="card-body p-4">
+          <div className="d-flex flex-wrap gap-2 mb-4">
+            <button className="btn btn-success" type="button" onClick={exportAll} disabled={exporting || importing}>
+              {exporting ? "Đang xuất..." : "Xuất all danh mục"}
+            </button>
+            <button className="btn btn-outline-success" type="button" onClick={() => importInputRef.current?.click()} disabled={exporting || importing}>
+              {importing ? "Đang nhập..." : "Import all danh mục"}
+            </button>
+            <input ref={importInputRef} type="file" accept=".xlsx,.xls" className="d-none" onChange={importAll} />
+          </div>
           <div className="btn-group mb-4" role="group">
             {catalogs.map((item) => <button key={item.key} type="button" className={`btn ${category === item.key ? "btn-primary" : "btn-outline-primary"}`} onClick={() => switchCategory(item.key)}>{item.label}</button>)}
           </div>
