@@ -3,6 +3,7 @@ import * as XLSX from "xlsx";
 import api from "./api";
 import TablePagination from "./TablePagination";
 import { groupHealthRecords } from "./healthObjectStatistics";
+import { useNotification } from "./NotificationProvider";
 
 const normalize = (value) => String(value ?? "").trim().toLocaleLowerCase("vi-VN");
 
@@ -13,6 +14,7 @@ const formatDate = (value) => {
 };
 
 function ExaminationPlacePage({ initialPlace = null }) {
+  const { confirm, notify } = useNotification();
   const [customers, setCustomers] = useState([]);
   const [places, setPlaces] = useState([]);
   const [activeTab, setActiveTab] = useState(initialPlace);
@@ -20,6 +22,8 @@ function ExaminationPlacePage({ initialPlace = null }) {
   const [appliedKeyword, setAppliedKeyword] = useState("");
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
+  const [updatingUnknown, setUpdatingUnknown] = useState(false);
+  const [selectedPlace, setSelectedPlace] = useState("");
   const [message, setMessage] = useState("");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -64,6 +68,43 @@ function ExaminationPlacePage({ initialPlace = null }) {
   const searchRows = () => {
     setAppliedKeyword(keyword.trim());
     setPage(1);
+  };
+
+  const updateUnknownPlace = async () => {
+    const unknownRows = activePlace?.key === "" ? activePlace.records : [];
+    const place = places.find((item) => String(item.id) === selectedPlace);
+    if (!place || !unknownRows.length) return;
+    if (!(await confirm({
+      title: "Cập nhật nơi khám?",
+      message: `Cập nhật “${place.name}” cho ${unknownRows.length.toLocaleString("vi-VN")} hồ sơ chưa xác định nơi khám?`,
+      confirmText: "Cập nhật",
+    }))) return;
+
+    setUpdatingUnknown(true);
+    setMessage("");
+    try {
+      await Promise.all(unknownRows.map((customer) => api.put(`/Customers/${customer.id}`, {
+        code: customer.code,
+        citizenIdIssueDate: customer.citizenIdIssueDate,
+        name: customer.name,
+        objectType: customer.objectType,
+        phoneNumber: customer.phoneNumber,
+        address: customer.address,
+        taxCode: customer.taxCode,
+        occupation: customer.occupation,
+        examinationDate: customer.examinationDate,
+        examinationPlace: place.name,
+        birthDate: customer.birthDate,
+        examinationSequenceNumber: customer.examinationSequenceNumber,
+      })));
+      setSelectedPlace("");
+      notify(`Đã cập nhật nơi khám cho ${unknownRows.length.toLocaleString("vi-VN")} hồ sơ.`, "success");
+      await loadData();
+    } catch (error) {
+      notify(error.response?.data?.message || "Không thể cập nhật nơi khám.", "error");
+    } finally {
+      setUpdatingUnknown(false);
+    }
   };
 
   const totalPages = Math.max(1, Math.ceil(filteredRows.length / pageSize));
@@ -131,6 +172,23 @@ function ExaminationPlacePage({ initialPlace = null }) {
               </button>
             ))}
           </div>
+
+          {selectedTab === "" && (
+            <div className="row g-2 align-items-end mb-3 border rounded bg-light p-3">
+              <div className="col-lg-8">
+                <label className="form-label fw-semibold" htmlFor="unknown-examination-place">Cập nhật nơi khám cho hồ sơ chưa xác định</label>
+                <select id="unknown-examination-place" className="form-select" value={selectedPlace} onChange={(event) => setSelectedPlace(event.target.value)} disabled={updatingUnknown || loading}>
+                  <option value="">Chọn nơi khám...</option>
+                  {places.map((place) => <option key={place.id} value={place.id}>{place.name}</option>)}
+                </select>
+              </div>
+              <div className="col-lg-4">
+                <button type="button" className="btn btn-warning w-100" onClick={updateUnknownPlace} disabled={!selectedPlace || !activePlace?.records.length || updatingUnknown || loading}>
+                  {updatingUnknown ? "Đang cập nhật..." : `Cập nhật ${activePlace?.records.length || 0} hồ sơ`}
+                </button>
+              </div>
+            </div>
+          )}
 
           <div className="row g-2 align-items-end mb-3">
             <div className="col-lg-8">
