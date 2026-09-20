@@ -12,7 +12,7 @@ namespace backend.Controllers
     public class CatalogItemsController : ControllerBase
     {
         private static readonly string[] ValidCategories = { "objectType", "occupation", "hamlet", "group", "examinationPlace" };
-        private static readonly string[] CategoriesWithDefault = { "objectType", "hamlet", "group" };
+        private static readonly string[] CategoriesWithDefault = { "objectType", "hamlet", "group", "examinationPlace" };
         private readonly AppDbContext _context;
 
         public CatalogItemsController(AppDbContext context) => _context = context;

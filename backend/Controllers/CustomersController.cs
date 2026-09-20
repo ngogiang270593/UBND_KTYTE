@@ -35,6 +35,39 @@ namespace backend.Controllers
             return Ok(customers);
         }
 
+        [HttpGet("check-code")]
+        public async Task<IActionResult> CheckCode(string? code, int? exceptId)
+        {
+            var normalizedCode = (code ?? string.Empty).Trim();
+
+            if (string.IsNullOrWhiteSpace(normalizedCode))
+                return Ok(new { duplicated = false });
+
+            var duplicated = await _context.Customers
+                .AsNoTracking()
+                .Where(x => x.Code == normalizedCode && (!exceptId.HasValue || x.Id != exceptId.Value))
+                .OrderByDescending(x => x.ExaminationDate)
+                .ThenByDescending(x => x.Id)
+                .FirstOrDefaultAsync();
+
+            if (duplicated == null)
+                return Ok(new { duplicated = false });
+
+            return Ok(new
+            {
+                duplicated = true,
+                duplicatedCustomer = new
+                {
+                    duplicated.Id,
+                    duplicated.Code,
+                    duplicated.Name,
+                    duplicated.BirthDate,
+                    duplicated.ExaminationPlace,
+                    duplicated.ExaminationDate
+                }
+            });
+        }
+
         [HttpPost]
         public async Task<IActionResult> Create(Customer customer)
         {
@@ -86,13 +119,27 @@ namespace backend.Controllers
             {
                 return ValidationProblem(ModelState);
             }
-            var exists = await _context.Customers.AnyAsync(x => x.Code == customer.Code);
+            var duplicated = await _context.Customers
+                .AsNoTracking()
+                .Where(x => x.Code == customer.Code)
+                .OrderByDescending(x => x.ExaminationDate)
+                .ThenByDescending(x => x.Id)
+                .FirstOrDefaultAsync();
 
-            if (exists)
+            if (duplicated != null)
             {
                 return BadRequest(new
                 {
-                    message = "Căn cước đã tồn tại."
+                    message = "Căn cước đã tồn tại.",
+                    duplicatedCustomer = new
+                    {
+                        duplicated.Id,
+                        duplicated.Code,
+                        duplicated.Name,
+                        duplicated.BirthDate,
+                        duplicated.ExaminationPlace,
+                        duplicated.ExaminationDate
+                    }
                 });
             }
             if (!await SetExaminationNumber(customer, customer.ExaminationSequenceNumber))

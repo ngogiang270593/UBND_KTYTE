@@ -15,6 +15,8 @@ const createEmptyForm = () => ({
   occupation: "",
   hamlet: "",
   group: "",
+  examinationPlace: "",
+  citizenIdIssueDate: null,
   birthDate: null,
   examinationDate: new Date(),
   examinationSequenceNumber: "",
@@ -101,20 +103,24 @@ function ExaminationNumberInput({ customer, disabled, onSave }) {
   const [value, setValue] = useState(customer.examinationSequenceNumber ?? "");
   const [saving, setSaving] = useState(false);
   return (
-    <form className="d-flex align-items-center gap-2 mb-2" onSubmit={async (event) => {
-      event.preventDefault();
-      event.stopPropagation();
-      if (saving) return;
-      setSaving(true);
-      try { await onSave(customer.id, value === "" ? null : Number(value)); }
-      finally { setSaving(false); }
-    }}>
-      <label htmlFor={`examination-number-${customer.id}`} className="small fw-semibold text-nowrap">STT khám:</label>
+    <form
+      className="d-inline-flex align-items-center gap-1 ms-2"
+      title="STT khám"
+      onSubmit={async (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        if (saving) return;
+        setSaving(true);
+        try { await onSave(customer.id, value === "" ? null : Number(value)); }
+        finally { setSaving(false); }
+      }}
+    >
       <input id={`examination-number-${customer.id}`} type="number" min="1" max="2147483647" step="1"
-        className="form-control form-control-sm" style={{ width: 100 }}
+        className="form-control form-control-sm d-inline-block" style={{ width: 58, padding: "1px 4px", fontSize: "12px" }}
         value={value} onChange={(event) => setValue(event.target.value)} disabled={disabled || saving} />
-      <button type="submit" className="btn btn-outline-primary btn-sm" disabled={disabled || saving}>
-        {saving ? "Đang lưu..." : "Lưu STT"}
+      <button type="submit" className="btn btn-outline-primary btn-sm px-1 py-0" style={{ fontSize: "12px" }}
+        title="Lưu STT khám" disabled={disabled || saving}>
+        {saving ? "..." : "Lưu"}
       </button>
     </form>
   );
@@ -128,6 +134,8 @@ function CustomerPage() {
   const [form, setForm] = useState(createEmptyForm());
   const [isSaving, setIsSaving] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
+  const [duplicateInfo, setDuplicateInfo] = useState(null);
+  const [checkingCode, setCheckingCode] = useState(false);
 
   const [searchText, setSearchText] = useState("");
   const deferredSearchText = useDeferredValue(searchText);
@@ -140,6 +148,7 @@ function CustomerPage() {
     occupation: [],
     hamlet: [],
     group: [],
+    examinationPlace: [],
   });
 
   const codeInputRef = useRef(null);
@@ -325,12 +334,14 @@ function CustomerPage() {
         occupation,
         hamlet,
         group,
+        examinationPlace,
       ] = await Promise.all(
         [
           "objectType",
           "occupation",
           "hamlet",
           "group",
+          "examinationPlace",
         ].map((category) =>
           api.get("/CatalogItems", {
             params: { category },
@@ -360,11 +371,16 @@ function CustomerPage() {
         ? group.data
         : [];
 
+      const examinationPlaceOptions = Array.isArray(examinationPlace.data)
+        ? examinationPlace.data
+        : [];
+
       setCatalogOptions({
         objectType: objectTypeOptions,
         occupation: occupationOptions,
         hamlet: hamletOptions,
         group: groupOptions,
+        examinationPlace: examinationPlaceOptions,
       });
 
       // =====================================================
@@ -385,6 +401,13 @@ function CustomerPage() {
         hamlet:
           current.hamlet ||
           hamletOptions.find(
+            (item) => item.isDefault
+          )?.name ||
+          "",
+
+        examinationPlace:
+          current.examinationPlace ||
+          examinationPlaceOptions.find(
             (item) => item.isDefault
           )?.name ||
           "",
@@ -409,6 +432,34 @@ function CustomerPage() {
       ...prevForm,
       [name]: value,
     }));
+  };
+
+  // =====================================================
+  // KIỂM TRA TRÙNG CĂN CƯỚC NGAY KHI RỜI Ô (TAB/BLUR)
+  // =====================================================
+  const handleCodeBlur = async () => {
+    const code = (form.code ?? "").trim();
+
+    if (!code) return;
+
+    setCheckingCode(true);
+
+    try {
+      const res = await api.get("/Customers/check-code", {
+        params: {
+          code,
+          exceptId: editingId ?? undefined,
+        },
+      });
+
+      if (res.data?.duplicated && res.data?.duplicatedCustomer) {
+        setDuplicateInfo(res.data.duplicatedCustomer);
+      }
+    } catch (error) {
+      console.error("Lỗi kiểm tra căn cước:", error);
+    } finally {
+      setCheckingCode(false);
+    }
   };
 
   // =====================================================
@@ -650,6 +701,12 @@ function CustomerPage() {
         catalogOptions.hamlet.find(
           (item) => item.isDefault
         )?.name ?? "",
+
+      // Mặc định Nơi khám
+      examinationPlace:
+        catalogOptions.examinationPlace.find(
+          (item) => item.isDefault
+        )?.name ?? "",
     });
 
     focusFirstInput();
@@ -703,6 +760,11 @@ function CustomerPage() {
       address: form.address.trim(),
       taxCode: form.taxCode.trim(),
       occupation: form.occupation.trim(),
+      examinationPlace: form.examinationPlace.trim(),
+
+      citizenIdIssueDate: toApiDate(
+        form.citizenIdIssueDate
+      ),
 
       birthDate: toApiDate(
         form.birthDate
@@ -767,6 +829,15 @@ function CustomerPage() {
         error
       );
 
+      // Trùng căn cước: hiện modal nổi bật thông tin bản ghi đã tồn tại.
+      const duplicatedCustomer =
+        error?.response?.data?.duplicatedCustomer;
+
+      if (duplicatedCustomer) {
+        setDuplicateInfo(duplicatedCustomer);
+        return;
+      }
+
       notify(
         getApiErrorMessage(error),
         "error"
@@ -806,6 +877,17 @@ function CustomerPage() {
         "tổ",
         catalogOptions.group
       ),
+
+      // Giữ lại Nơi khám và Ngày cấp CCCD của hồ sơ khi cập nhật
+      examinationPlace:
+        customer.examinationPlace ?? "",
+
+      citizenIdIssueDate:
+        customer.citizenIdIssueDate
+          ? new Date(
+              customer.citizenIdIssueDate
+            )
+          : null,
 
       birthDate:
         customer.birthDate
@@ -978,7 +1060,12 @@ function CustomerPage() {
                   onChange={
                     handleChange
                   }
-                  placeholder="Nhập số căn cước"
+                  onBlur={handleCodeBlur}
+                  placeholder={
+                    checkingCode
+                      ? "Đang kiểm tra..."
+                      : "Nhập số căn cước"
+                  }
                   required
                 />
               </div>
@@ -1238,6 +1325,50 @@ function CustomerPage() {
                   ))}
                 </datalist>
               </div>
+
+              {/* NƠI KHÁM */}
+              <div className="col-md-3">
+                <label className="form-label fw-semibold">
+                  Nơi khám
+                </label>
+
+                <input
+                  name="examinationPlace"
+                  className="form-control"
+                  value={form.examinationPlace ?? ""}
+                  onChange={handleChange}
+                  list="customer-examination-place-options"
+                  placeholder="Gõ để tìm nơi khám"
+                />
+                <datalist id="customer-examination-place-options">
+                  {catalogOptions.examinationPlace.map((item) => (
+                    <option key={item.id} value={item.name} />
+                  ))}
+                </datalist>
+              </div>
+
+              {/* NGÀY CẤP CCCD */}
+              <div className="col-md-3">
+                <label className="form-label fw-semibold">
+                  Ngày cấp CCCD
+                </label>
+
+                <DatePicker
+                  wrapperClassName="w-100"
+                  selected={form.citizenIdIssueDate}
+                  onChange={(date) =>
+                    setForm((prevForm) => ({
+                      ...prevForm,
+                      citizenIdIssueDate: date,
+                    }))
+                  }
+                  dateFormat="dd/MM/yyyy"
+                  className="form-control"
+                  placeholderText="dd/MM/yyyy"
+                  maxDate={new Date()}
+                  isClearable
+                />
+              </div>
             </div>
 
             <div className="mt-4 text-end">
@@ -1444,10 +1575,21 @@ function CustomerPage() {
                         key={
                           customer.id
                         }
-                        style={{
-                          background:
-                            "#ffffff",
-                        }}
+                        style={
+                          customer.examinationSequenceNumber
+                            ? {
+                                background:
+                                  "linear-gradient(90deg, #ecfdf5 0%, #f0fdfa 55%, #ffffff 100%)",
+                                borderLeft:
+                                  "4px solid #10b981",
+                                boxShadow:
+                                  "inset 0 0 0 1px #a7f3d0",
+                              }
+                            : {
+                                background:
+                                  "#ffffff",
+                              }
+                        }
                       >
                         <td className="text-center">
                           <button
@@ -1495,48 +1637,80 @@ function CustomerPage() {
                             1}
                         </td>
 
-                        <td
-                          className={
-                            String(
-                              customer.examinationDate ??
-                                ""
-                            ).substring(
-                              0,
-                              10
-                            ) ===
-                            todayDate
-                              ? "text-center fw-bold text-primary"
-                              : "text-center"
-                          }
-                        >
-                          {formatExaminationDate(
-                            customer.examinationDate
-                          )}
+                        <td className="text-center">
+                          <span
+                            title="Ngày khám"
+                            style={{
+                              display:
+                                "inline-flex",
+                              alignItems:
+                                "center",
+                              justifyContent:
+                                "center",
+                              gap: "6px",
+                              background:
+                                "linear-gradient(135deg, #0ea5e9, #0369a1)",
+                              color:
+                                "#ffffff",
+                              fontWeight:
+                                700,
+                              fontSize:
+                                "13px",
+                              letterSpacing:
+                                "0.3px",
+                              padding:
+                                "6px 14px",
+                              borderRadius:
+                                "999px",
+                              boxShadow:
+                                "0 2px 8px rgba(3,105,161,0.35)",
+                            }}
+                          >
+                            <span/>
+                            {formatExaminationDate(
+                              customer.examinationDate
+                            )}
+                          </span>
                         </td>
 
                         <td>
-                          <div className="fw-bold text-dark mb-2">
-                            {
-                              customer.name ||
-                              "Chưa có họ tên"
-                            }
-                          </div>
-
-                          <ExaminationNumberInput
-                            key={`${customer.id}-${customer.examinationSequenceNumber ?? ""}`}
-                            customer={customer} disabled={isSaving || deletingId !== null}
-                            onSave={saveExaminationNumber}
-                          />
-                          <div className="row row-cols-1 row-cols-md-2 g-1 small text-muted">
+                          <div className="row row-cols-2 row-cols-md-4 g-1 small text-muted">
                             <div className="col">
                               <span className="fw-semibold text-body">
                                 Căn cước:{" "}
                               </span>
 
-                              {
-                                customer.code ||
-                                "—"
-                              }
+                              <span className="fw-bold text-dark">
+                                {customer.code || "—"}
+                              </span>
+
+                             
+
+                              <ExaminationNumberInput
+                                key={`${customer.id}-${customer.examinationSequenceNumber ?? ""}`}
+                                customer={customer} disabled={isSaving || deletingId !== null}
+                                onSave={saveExaminationNumber}
+                              />
+                            </div>
+
+                            <div className="col">
+                              <span className="fw-semibold text-body">
+                                Họ và tên:{" "}
+                              </span>
+
+                              <span className="fw-bold text-dark">
+                                {customer.name || "—"}
+                              </span>
+                            </div>
+
+                            <div className="col">
+                              <span className="fw-semibold text-body">
+                                Ngày sinh:{" "}
+                              </span>
+
+                              <span className="fw-bold text-dark">
+                                {formatExaminationDate(customer.birthDate) || "—"}
+                              </span>
                             </div>
 
                             <div className="col">
@@ -1571,16 +1745,6 @@ function CustomerPage() {
 
                             <div className="col">
                               <span className="fw-semibold text-body">
-                                Ngày sinh:{" "}
-                              </span>
-
-                              {formatExaminationDate(
-                                customer.birthDate
-                              ) || "—"}
-                            </div>
-
-                            <div className="col">
-                              <span className="fw-semibold text-body">
                                 Địa chỉ:{" "}
                               </span>
 
@@ -1599,6 +1763,27 @@ function CustomerPage() {
                                 customer.occupation ||
                                 "—"
                               }
+                            </div>
+
+                            <div className="col">
+                              <span className="fw-semibold text-body">
+                                Nơi khám:{" "}
+                              </span>
+
+                              {
+                                customer.examinationPlace ||
+                                "—"
+                              }
+                            </div>
+
+                            <div className="col">
+                              <span className="fw-semibold text-body">
+                                Ngày cấp CCCD:{" "}
+                              </span>
+
+                              {formatExaminationDate(
+                                customer.citizenIdIssueDate
+                              ) || "—"}
                             </div>
                           </div>
                         </td>
@@ -1619,6 +1804,52 @@ function CustomerPage() {
           />
         </div>
       </div>
+
+      {duplicateInfo && (
+        <div
+          className="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center p-3"
+          style={{ zIndex: 12000, background: "rgba(15, 23, 42, 0.55)", backdropFilter: "blur(3px)" }}
+          onMouseDown={(event) => event.target === event.currentTarget && setDuplicateInfo(null)}
+        >
+          <div className="bg-white shadow-lg" style={{ width: "480px", maxWidth: "100%", borderRadius: "18px", overflow: "hidden" }}>
+            <div className="p-4 pb-3 d-flex gap-3" style={{ background: "#fef2f2", borderBottom: "1px solid #fecaca" }}>
+              <div className="flex-shrink-0 d-flex align-items-center justify-content-center fw-bold" style={{ width: "46px", height: "46px", borderRadius: "14px", background: "#fee2e2", color: "#b91c1c", fontSize: "24px" }}>!</div>
+              <div>
+                <h5 className="fw-bold mb-1 text-danger">Căn cước đã tồn tại</h5>
+                <div className="text-secondary">Thông tin người khám đã có trong hệ thống.</div>
+              </div>
+            </div>
+
+            <div className="p-4">
+              <div className="text-center mb-3 p-3" style={{ background: "#0f766e", color: "white", borderRadius: "14px" }}>
+                <div className="text-uppercase fw-semibold" style={{ fontSize: "12px", letterSpacing: "0.5px", opacity: 0.85 }}>Nơi khám</div>
+                <div className="fw-bold" style={{ fontSize: "20px" }}>{duplicateInfo.examinationPlace || "—"}</div>
+              </div>
+
+              <div className="row g-3">
+                <div className="col-12">
+                  <div className="text-muted small fw-semibold text-uppercase">Họ và tên</div>
+                  <div className="fw-bold fs-5">{duplicateInfo.name || "—"}</div>
+                </div>
+
+                <div className="col-6">
+                  <div className="text-muted small fw-semibold text-uppercase">Ngày sinh</div>
+                  <div className="fw-semibold">{formatExaminationDate(duplicateInfo.birthDate) || "—"}</div>
+                </div>
+
+                <div className="col-6">
+                  <div className="text-muted small fw-semibold text-uppercase">Căn cước</div>
+                  <div className="fw-semibold text-primary">{duplicateInfo.code || "—"}</div>
+                </div>
+              </div>
+            </div>
+
+            <div className="px-4 py-3 d-flex justify-content-end" style={{ background: "#f8fafc" }}>
+              <button type="button" className="btn btn-primary px-4" onClick={() => setDuplicateInfo(null)}>Đã hiểu</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

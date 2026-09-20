@@ -11,7 +11,7 @@ const catalogs = [
   { key: "examinationPlace", label: "Nơi khám" },
 ];
 
-const categoriesWithDefault = ["objectType", "hamlet", "group"];
+const categoriesWithDefault = ["objectType", "hamlet", "group", "examinationPlace"];
 
 function CatalogPage() {
   const { confirm, notify } = useNotification();

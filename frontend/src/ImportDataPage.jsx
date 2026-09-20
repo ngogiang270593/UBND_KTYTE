@@ -551,13 +551,19 @@ function ImportDataPage() {
 
       const validatedRows = validateRows(mappedRows);
 
-      setRows(validatedRows);
+      // Đẩy các dòng lỗi lên đầu để người dùng dễ nhận biết và sửa.
+      // Array.prototype.sort ổn định nên thứ tự gốc trong mỗi nhóm được giữ nguyên.
+      const sortedRows = [...validatedRows].sort(
+        (a, b) => Number(a.isValid) - Number(b.isValid)
+      );
 
-      const validCount = validatedRows.filter((row) => row.isValid).length;
-      const invalidCount = validatedRows.length - validCount;
+      setRows(sortedRows);
+
+      const validCount = sortedRows.filter((row) => row.isValid).length;
+      const invalidCount = sortedRows.length - validCount;
 
       setMessage(
-        `Đã đọc ${validatedRows.length} dòng từ file Excel.\n` +
+        `Đã đọc ${sortedRows.length} dòng từ file Excel.\n` +
           `Hợp lệ: ${validCount} dòng.\n` +
           `Có lỗi: ${invalidCount} dòng.`
       );
