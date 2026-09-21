@@ -1,0 +1,250 @@
+﻿[
+  {
+    "id": "crops",
+    "number": 2,
+    "title": "Thu nhập từ trồng trọt",
+    "question": "Trong 12 tháng qua hộ ông/bà có phát sinh thu nhập - chi phí từ hoạt động trồng trọt không?",
+    "cost1": "Giống (bao gồm cả giống tự sản xuất)",
+    "cost2": "Phân bón, thuốc trừ sâu, diệt cỏ, bảo vệ thực vật",
+    "retained": "Giá trị đã thu hoạch để lại sử dụng (phục vụ sản xuất kinh doanh và tiêu dùng) và giá trị tồn kho chưa sử dụng",
+    "categories": [
+      {
+        "id": "plants",
+        "code": "1",
+        "label": "Cây trồng các loại",
+        "mode": "standard",
+        "repeat": true,
+        "initial": [
+          ""
+        ]
+      },
+      {
+        "id": "nursery",
+        "code": "2",
+        "label": "Nhân giống và chăm sóc giống",
+        "mode": "standard"
+      },
+      {
+        "id": "byproducts",
+        "code": "3",
+        "label": "Sản phẩm phụ và sản phẩm thu nhặt từ trồng trọt",
+        "mode": "noInputs"
+      },
+      {
+        "id": "services",
+        "code": "4",
+        "label": "Dịch vụ trồng trọt",
+        "mode": "service"
+      },
+      {
+        "id": "compensation",
+        "code": "5",
+        "label": "Tiền được đền bù/hỗ trợ thiệt hại về trồng trọt do dịch bệnh, thiên tai, môi trường",
+        "mode": "compensation"
+      }
+    ]
+  },
+  {
+    "id": "livestock",
+    "number": 3,
+    "title": "Thu nhập từ chăn nuôi",
+    "question": "Trong 12 tháng qua hộ ông/bà có phát sinh thu nhập - chi phí từ hoạt động chăn nuôi hoặc từ săn bắt, đánh bẫy, thuần dưỡng chim, thú không?",
+    "cost1": "Giống (bao gồm cả giống tự sản xuất)",
+    "cost2": "Thức ăn, thuốc phòng và chữa bệnh",
+    "categories": [
+      {
+        "id": "cattle",
+        "code": "1",
+        "label": "Gia súc",
+        "mode": "standard",
+        "repeat": true,
+        "initial": [
+          ""
+        ]
+      },
+      {
+        "id": "poultry",
+        "code": "2",
+        "label": "Gia cầm",
+        "mode": "standard",
+        "repeat": true,
+        "initial": [
+          ""
+        ]
+      },
+      {
+        "id": "otherAnimals",
+        "code": "3",
+        "label": "Chăn nuôi khác",
+        "mode": "standard",
+        "repeat": true,
+        "initial": [
+          ""
+        ]
+      },
+      {
+        "id": "animalProducts",
+        "code": "4",
+        "label": "Sản phẩm không qua giết mổ",
+        "mode": "standard",
+        "repeat": true,
+        "initial": [
+          ""
+        ]
+      },
+      {
+        "id": "breeding",
+        "code": "5",
+        "label": "Giống gia súc, gia cầm, vật nuôi",
+        "mode": "standard"
+      },
+      {
+        "id": "byproducts",
+        "code": "6",
+        "label": "Sản phẩm phụ chăn nuôi",
+        "mode": "noInputs"
+      },
+      {
+        "id": "services",
+        "code": "7",
+        "label": "Dịch vụ chăn nuôi",
+        "mode": "service"
+      },
+      {
+        "id": "hunting",
+        "code": "8",
+        "label": "Săn bắt, đánh bẫy",
+        "mode": "service"
+      },
+      {
+        "id": "compensation",
+        "code": "9",
+        "label": "Tiền được đền bù/hỗ trợ thiệt hại về chăn nuôi do dịch bệnh, thiên tai, môi trường",
+        "mode": "compensation"
+      }
+    ]
+  },
+  {
+    "id": "forestry",
+    "number": 4,
+    "title": "Thu nhập từ lâm nghiệp",
+    "question": "Trong 12 tháng qua hộ ông/bà có phát sinh thu nhập - chi phí từ hoạt động lâm nghiệp (khai thác gỗ, khai thác và thu nhặt sản phẩm từ rừng và cây lâm nghiệp phân tán, ươm các loại giống cây lâm nghiệp, trồng/quản lý/bảo vệ/chăm sóc rừng, hoạt động dịch vụ lâm nghiệp,…) không?",
+    "cost1": "Giống (bao gồm cả giống tự sản xuất)",
+    "cost2": "Phân bón, thuốc trừ sâu, diệt cỏ, bảo vệ thực vật",
+    "categories": [
+      {
+        "id": "harvesting",
+        "code": "1",
+        "label": "Khai thác, thu nhặt lâm sản",
+        "mode": "noInputs",
+        "repeat": true,
+        "initial": [
+          ""
+        ]
+      },
+      {
+        "id": "nursery",
+        "code": "2",
+        "label": "Ươm giống cây lâm nghiệp",
+        "mode": "standard"
+      },
+      {
+        "id": "forestCare",
+        "code": "3",
+        "label": "Trồng rừng, chăm sóc, tu bổ, cải tạo rừng, khoanh nuôi tái sinh",
+        "mode": "standard"
+      },
+      {
+        "id": "services",
+        "code": "4",
+        "label": "Dịch vụ lâm nghiệp",
+        "mode": "noInputs"
+      },
+      {
+        "id": "compensation",
+        "code": "5",
+        "label": "Tiền được đền bù/hỗ trợ thiệt hại về lâm nghiệp do dịch bệnh, thiên tai, môi trường",
+        "mode": "compensation"
+      }
+    ]
+  },
+  {
+    "id": "aquaculture",
+    "number": 5,
+    "title": "Thu nhập từ thủy sản",
+    "question": "Trong 12 tháng qua hộ ông/bà có phát sinh thu nhập - chi phí từ hoạt động nuôi, ươm giống cá, tôm, thủy sản khác hoặc đánh bắt thủy hải sản ở ao hồ, sông, suối, biển không?",
+    "cost1": "Giống (bao gồm cả giống tự sản xuất)",
+    "cost2": "Thức ăn, thuốc phòng và chữa bệnh",
+    "categories": [
+      {
+        "id": "farming",
+        "code": "1",
+        "label": "Nuôi trồng thủy sản",
+        "mode": "standard",
+        "repeat": true,
+        "initial": [
+          "Cá",
+          "Tôm"
+        ]
+      },
+      {
+        "id": "fishing",
+        "code": "2",
+        "label": "Đánh bắt thủy sản",
+        "mode": "noInputs",
+        "repeat": true,
+        "initial": [
+          "Cá",
+          "Tôm"
+        ]
+      },
+      {
+        "id": "breeding",
+        "code": "3",
+        "label": "Sản xuất giống",
+        "mode": "standard",
+        "repeat": true,
+        "initial": [
+          "Cá giống các loại",
+          "Tôm giống các loại"
+        ]
+      },
+      {
+        "id": "services",
+        "code": "4",
+        "label": "Dịch vụ thủy sản",
+        "mode": "serviceTotal"
+      },
+      {
+        "id": "compensation",
+        "code": "5",
+        "label": "Tiền được đền bù/hỗ trợ thiệt hại về thủy sản do dịch bệnh, thiên tai, môi trường",
+        "mode": "compensation"
+      }
+    ]
+  },
+  {
+    "id": "business",
+    "number": 6,
+    "title": "Thu nhập từ hoạt động sản xuất kinh doanh phi nông, lâm nghiệp, thủy sản hoặc chế biến sản phẩm nông, lâm nghiệp, thủy sản",
+    "question": "Trong 12 tháng qua hộ ông/bà có phát sinh thu nhập - chi phí từ hoạt động sản xuất kinh doanh phi nông, lâm nghiệp, thủy sản hoặc chế biến sản phẩm nông, lâm nghiệp, thủy sản của hộ không?",
+    "cost1": "Nguyên vật liệu chính, phụ, thực liệu",
+    "cost2": "Năng lượng, nhiên liệu",
+    "categories": [
+      {
+        "id": "activities",
+        "code": "",
+        "label": "Mô tả hoạt động",
+        "mode": "standard",
+        "repeat": true,
+        "initial": [
+          "",
+          "",
+          "",
+          "",
+          ""
+        ]
+      }
+    ]
+  }
+]

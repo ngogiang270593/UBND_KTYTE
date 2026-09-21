@@ -1,3 +1,4 @@
+import { isUnder18Object, isElderlyObject } from "./healthObjectStatistics";
 import { useEffect, useMemo, useState } from "react";
 import api from "./api";
 import HealthSummaryCards from "./HealthSummaryCards";
@@ -32,16 +33,7 @@ const findHamlet = (customer, hamlets) => {
   return normalized.filter((hamlet) => parts.some((part) => part.startsWith(`${hamlet.normalizedName} `) || part.endsWith(` ${hamlet.normalizedName}`))).sort((first, second) => second.normalizedName.length - first.normalizedName.length)[0] ?? null;
 };
 
-const isElderly = (customer) => normalize(customer.objectType).includes("nguoi cao tuoi");
-const isUnder18 = (customer) => {
-  if (!customer.birthDate) return false;
-  const birthDate = new Date(customer.birthDate);
-  const examinationDate = customer.examinationDate ? new Date(customer.examinationDate) : new Date();
-  if (Number.isNaN(birthDate.getTime()) || Number.isNaN(examinationDate.getTime())) return false;
-  const eighteenthBirthday = new Date(birthDate);
-  eighteenthBirthday.setFullYear(eighteenthBirthday.getFullYear() + 18);
-  return eighteenthBirthday > examinationDate;
-};
+
 
 
 
@@ -54,8 +46,8 @@ function buildSummary(records) {
     if (!groups.has(key)) groups.set(key, { id: hamlet?.id, label: hamlet?.name || "Chưa xác định", count: 0, under18: 0, elderly: 0 });
     const row = groups.get(key);
     row.count++;
-    if (isUnder18(customer)) { row.under18++; under18++; }
-    if (isElderly(customer)) { row.elderly++; elderly++; }
+    if (isUnder18Object(customer)) { row.under18++; under18++; }
+    if (isElderlyObject(customer)) { row.elderly++; elderly++; }
   });
   return { total: records.length, under18, elderly, hamlets: sortHamlets([...groups.values()]) };
 }

@@ -1,4 +1,5 @@
 using backend.Data;
+using backend.Security;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -26,8 +27,9 @@ namespace backend.Controllers
         [HttpPost("login")]
         public async Task<IActionResult> Login(LoginRequest request)
         {
+            var username = request.Username?.Trim().ToLowerInvariant() ?? "";
             var user = await _context.Users
-                .FirstOrDefaultAsync(x => x.Username == request.Username);
+                .FirstOrDefaultAsync(x => x.Username.ToLower() == username);
 
             if (user == null)
             {
@@ -46,6 +48,10 @@ namespace backend.Controllers
                     message = "Sai tài khoản hoặc mật khẩu"
                 });
             }
+
+            var profile = await ModuleAccess.GetProfile(_context, user);
+            if (!profile.IsActive)
+                return StatusCode(403, new { message = "Tài khoản đã bị khóa." });
 
             var claims = new[]
             {
@@ -76,9 +82,15 @@ namespace backend.Controllers
                 token = jwt,
                 username = user.Username,
                 fullName = user.FullName,
-                role = user.Role
+                role = user.Role,
+                isSystemAdmin = profile.IsSystemAdmin,
+                modules = profile.Modules
             });
         }
+
+        [Authorize]
+        [HttpGet("me")]
+        public IActionResult Me() => Ok(HttpContext.Items["AccessProfile"]);
 
         [Authorize]
         [HttpPost("change-password")]

@@ -14,7 +14,13 @@ namespace backend.Data
         {
         }
 
+        public DbSet<TnbqHousehold> TnbqHouseholds => Set<TnbqHousehold>();
+        public DbSet<TnbqSurvey> TnbqSurveys => Set<TnbqSurvey>();
+        public DbSet<TnbqCommune> TnbqCommunes => Set<TnbqCommune>();
+        public DbSet<TnbqHamlet> TnbqHamlets => Set<TnbqHamlet>();
+
         public DbSet<User> Users { get; set; }
+        public DbSet<UserModuleAccess> UserModuleAccesses => Set<UserModuleAccess>();
         public DbSet<TanHoaRecord> TanHoaRecords { get; set; }
         public DbSet<TanHoaNkRecord> TanHoaNkRecords { get; set; }
         public DbSet<TanHoaPaidKskRecord> TanHoaPaidKskRecords { get; set; }
@@ -68,6 +74,39 @@ namespace backend.Data
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+            modelBuilder.Entity<UserModuleAccess>().HasKey(x => x.UserId);
+            modelBuilder.Entity<UserModuleAccess>().HasOne<User>().WithOne()
+                .HasForeignKey<UserModuleAccess>(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<TnbqSurvey>().HasIndex(x => new { x.Year, x.IdentityKey }).IsUnique();
+            modelBuilder.Entity<TnbqCommune>().HasIndex(x => x.Code).IsUnique();
+            modelBuilder.Entity<TnbqHamlet>().HasIndex(x => new { x.CommuneId, x.Code }).IsUnique();
+            modelBuilder.Entity<TnbqHamlet>().HasOne(x => x.Commune).WithMany(x => x.Hamlets)
+                .HasForeignKey(x => x.CommuneId).OnDelete(DeleteBehavior.Cascade);
+            modelBuilder.Entity<TnbqSurvey>().Property(x => x.Revision).IsConcurrencyToken();
+            modelBuilder.Entity<TnbqSurveyCrops>().HasKey(x => x.SurveyId);
+            modelBuilder.Entity<TnbqSurvey>().HasOne(x => x.Crops).WithOne()
+                .HasForeignKey<TnbqSurveyCrops>(x => x.SurveyId).OnDelete(DeleteBehavior.Cascade);
+            modelBuilder.Entity<TnbqSurveyLivestock>().HasKey(x => x.SurveyId);
+            modelBuilder.Entity<TnbqSurvey>().HasOne(x => x.Livestock).WithOne()
+                .HasForeignKey<TnbqSurveyLivestock>(x => x.SurveyId).OnDelete(DeleteBehavior.Cascade);
+            modelBuilder.Entity<TnbqSurveyForestry>().HasKey(x => x.SurveyId);
+            modelBuilder.Entity<TnbqSurvey>().HasOne(x => x.Forestry).WithOne()
+                .HasForeignKey<TnbqSurveyForestry>(x => x.SurveyId).OnDelete(DeleteBehavior.Cascade);
+            modelBuilder.Entity<TnbqSurveyAquaculture>().HasKey(x => x.SurveyId);
+            modelBuilder.Entity<TnbqSurvey>().HasOne(x => x.Aquaculture).WithOne()
+                .HasForeignKey<TnbqSurveyAquaculture>(x => x.SurveyId).OnDelete(DeleteBehavior.Cascade);
+            modelBuilder.Entity<TnbqSurveyBusiness>().HasKey(x => x.SurveyId);
+            modelBuilder.Entity<TnbqSurvey>().HasOne(x => x.Business).WithOne()
+                .HasForeignKey<TnbqSurveyBusiness>(x => x.SurveyId).OnDelete(DeleteBehavior.Cascade);
+            modelBuilder.Entity<TnbqSurveyOtherIncome>().HasKey(x => x.SurveyId);
+            modelBuilder.Entity<TnbqSurvey>().HasOne(x => x.OtherIncome).WithOne()
+                .HasForeignKey<TnbqSurveyOtherIncome>(x => x.SurveyId).OnDelete(DeleteBehavior.Cascade);
+            modelBuilder.Entity<TnbqSurveySalary>().HasKey(x => x.SurveyId);
+            modelBuilder.Entity<TnbqSurvey>().HasOne(x => x.Salary).WithOne()
+                .HasForeignKey<TnbqSurveySalary>(x => x.SurveyId).OnDelete(DeleteBehavior.Cascade);
+            modelBuilder.Entity<TnbqHousehold>().HasIndex(x => x.Year);
+            modelBuilder.Entity<TnbqHousehold>().HasIndex(x => new { x.Year, x.Hamlet });
 
             modelBuilder.Entity<ExaminationNumber>().HasKey(x => x.CustomerId);
             modelBuilder.Entity<ExaminationNumber>()

@@ -1,3 +1,4 @@
+import { isUnder18Object, isElderlyObject } from "./healthObjectStatistics";
 import DatePicker from "react-datepicker";
 import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import api from "./api";
@@ -104,7 +105,7 @@ function ExaminationNumberInput({ customer, disabled, onSave }) {
   const [saving, setSaving] = useState(false);
   return (
     <form
-      className="d-inline-flex align-items-center gap-1 ms-2"
+      className="d-inline-flex align-items-center gap-1"
       title="STT khám"
       onSubmit={async (event) => {
         event.preventDefault();
@@ -208,33 +209,13 @@ function CustomerPage() {
 
   const todayUnder18Count = useMemo(
     () =>
-      todayExaminations.filter((customer) => {
-        if (!customer.birthDate) return false;
-
-        const birthDate = parseDateOnly(customer.birthDate);
-        const examinationDate = parseDateOnly(customer.examinationDate);
-
-        if (!birthDate || !examinationDate) {
-          return false;
-        }
-
-        const eighteenthBirthday = new Date(birthDate);
-        eighteenthBirthday.setFullYear(
-          eighteenthBirthday.getFullYear() + 18
-        );
-
-        return eighteenthBirthday > examinationDate;
-      }).length,
+      todayExaminations.filter(isUnder18Object).length,
     [todayExaminations]
   );
 
   const todayElderlyCount = useMemo(
     () =>
-      todayExaminations.filter(
-        (customer) =>
-          normalizeSearchText(customer.objectType) ===
-          normalizeSearchText("NGƯỜI CAO TUỔI")
-      ).length,
+      todayExaminations.filter(isElderlyObject).length,
     [todayExaminations]
   );
 
@@ -254,26 +235,8 @@ function CustomerPage() {
 
       current.total += 1;
 
-      const birthDate = parseDateOnly(customer.birthDate);
-      const examinationDate = parseDateOnly(customer.examinationDate);
-
-      if (birthDate && examinationDate) {
-        const eighteenthBirthday = new Date(birthDate);
-        eighteenthBirthday.setFullYear(
-          eighteenthBirthday.getFullYear() + 18
-        );
-
-        if (eighteenthBirthday > examinationDate) {
-          current.under18 += 1;
-        }
-      }
-
-      if (
-        normalizeSearchText(customer.objectType) ===
-        normalizeSearchText("NGƯỜI CAO TUỔI")
-      ) {
-        current.elderly += 1;
-      }
+      if (isUnder18Object(customer)) current.under18 += 1;
+      if (isElderlyObject(customer)) current.elderly += 1;
 
       summary.set(hamletName, current);
     });
@@ -1637,44 +1600,32 @@ function CustomerPage() {
                             1}
                         </td>
 
-                        <td className="text-center">
-                          <span
-                            title="Ngày khám"
-                            style={{
-                              display:
-                                "inline-flex",
-                              alignItems:
-                                "center",
-                              justifyContent:
-                                "center",
-                              gap: "6px",
-                              background:
-                                "linear-gradient(135deg, #0ea5e9, #0369a1)",
-                              color:
-                                "#ffffff",
-                              fontWeight:
-                                700,
-                              fontSize:
-                                "13px",
-                              letterSpacing:
-                                "0.3px",
-                              padding:
-                                "6px 14px",
-                              borderRadius:
-                                "999px",
-                              boxShadow:
-                                "0 2px 8px rgba(3,105,161,0.35)",
-                            }}
-                          >
-                            <span/>
-                            {formatExaminationDate(
-                              customer.examinationDate
-                            )}
-                          </span>
+                        <td className={
+                            String(
+                              customer.examinationDate ??
+                                ""
+                            ).substring(
+                              0,
+                              10
+                            ) ===
+                            todayDate
+                              ? "text-center fw-bold text-primary"
+                              : "text-center"
+                          }
+                        >
+                          <div className="d-flex flex-column align-items-center gap-1">
+                              <ExaminationNumberInput
+                                key={`${customer.id}-${customer.examinationSequenceNumber ?? ""}`}
+                                customer={customer} disabled={isSaving || deletingId !== null}
+                                onSave={saveExaminationNumber}
+                              />
+                            <div>{formatExaminationDate(
+                            customer.examinationDate
+                          )}</div>
+                          </div>
                         </td>
-
                         <td>
-                          <div className="row row-cols-2 row-cols-md-4 g-1 small text-muted">
+                          <div className="row row-cols-2 row-cols-md-3 g-1 small text-muted">
                             <div className="col">
                               <span className="fw-semibold text-body">
                                 Căn cước:{" "}
@@ -1686,11 +1637,6 @@ function CustomerPage() {
 
                              
 
-                              <ExaminationNumberInput
-                                key={`${customer.id}-${customer.examinationSequenceNumber ?? ""}`}
-                                customer={customer} disabled={isSaving || deletingId !== null}
-                                onSave={saveExaminationNumber}
-                              />
                             </div>
 
                             <div className="col">

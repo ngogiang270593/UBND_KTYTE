@@ -6,7 +6,7 @@ import TanHoaNkImportPage from "./TanHoaNkImportPage";
 import TanHoaNkListPage from "./TanHoaNkListPage";
 import TanHoaInpatientListPage from "./TanHoaInpatientListPage";
 import TanHoaImportPage from "./TanHoaImportPage";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Login from "./Login";
 import AdminLayout from "./AdminLayout";
 import CustomerPage from "./CustomerPage";
@@ -31,24 +31,76 @@ import HealthDataProcessingPage from "./HealthDataProcessingPage";
 import ExaminationPlacePage from "./ExaminationPlacePage";
 import HealthStatisticsPage from "./HealthStatisticsPage";
 import HealthObjectStatisticsPage from "./HealthObjectStatisticsPage";
+import TnbqModule from "./TnbqModule";
+import TnbqSurveyPage from "./TnbqSurveyPage";
+import TnbqCatalogPage from "./TnbqCatalogPage";
+import UserManagementPage from "./UserManagementPage";
+import { appModules, findModuleByPage } from "./navigationConfig";
+import api from "./api";
 function App() {
-  const [token, setToken] = useState(sessionStorage.getItem("token"));
+  const [token, setToken] = useState(localStorage.getItem("token"));
   const [activePage, setActivePage] = useState("dashboard");
   const [selectedModule, setSelectedModule] = useState(null);
   const [selectedObjectType, setSelectedObjectType] = useState(null);
   const [selectedExaminationPlace, setSelectedExaminationPlace] = useState(null);
 
+  const [access, setAccess] = useState(null);
+  const [accessError, setAccessError] = useState(null);
+  const [accessRetry, setAccessRetry] = useState(0);
+
+  useEffect(() => {
+    if (!token) return;
+    let cancelled = false;
+    const refreshAccess = () => api.get("/Auth/me").then(({ data }) => {
+      if (!cancelled) { setAccess({ token, profile: data }); setAccessError(null); }
+    }).catch((error) => {
+      if (cancelled) return;
+      setAccess(null);
+      setAccessError({ token, message: error.response?.data?.message || "Không thể kiểm tra quyền truy cập. Vui lòng thử lại." });
+      if (error.response?.status === 401) {
+        localStorage.removeItem("token");
+        setToken(null);
+      }
+    });
+    refreshAccess();
+    window.addEventListener("focus", refreshAccess);
+    const interval = window.setInterval(refreshAccess, 30000);
+    return () => { cancelled = true; window.removeEventListener("focus", refreshAccess); window.clearInterval(interval); };
+  }, [token, accessRetry]);
+
   const logout = () => {
     sessionStorage.clear();
     localStorage.clear(); // xóa token cũ còn sót
     setToken(null);
+    setAccess(null);
+    setAccessError(null);
+    setActivePage("dashboard");
+    setSelectedModule(null);
   };
 
   if (!token) {
     return <Login onLogin={setToken} />;
   }
 
+  if (accessError?.token === token) return <div className="p-4">
+    <div className="alert alert-danger" role="alert">{accessError.message}</div>
+    <button className="btn btn-primary me-2" onClick={() => { setAccessError(null); setAccessRetry((value) => value + 1); }}>Thử lại</button>
+    <button className="btn btn-outline-secondary" onClick={logout}>Đăng xuất</button>
+  </div>;
+  if (access?.token !== token) return <p className="p-4" role="status">Đang kiểm tra quyền truy cập...</p>;
+  const profile = access.profile;
+  const modules = appModules.filter((module) => profile.isSystemAdmin || profile.modules.includes(module.id));
+  const pageModule = findModuleByPage(activePage);
+  const canOpenPage = activePage === "dashboard" || activePage === "changePassword"
+    || (activePage === "printTemplates" && modules.some((module) => module.id === "health"))
+    || (pageModule && modules.some((module) => module.id === pageModule.id));
+
   const renderPage = () => {
+    if (!canOpenPage) return <div className="alert alert-warning">Bạn không còn quyền truy cập chức năng này. Hãy chọn module khác trên Dashboard.</div>;
+    if (activePage === "users") return <UserManagementPage />;
+    if (activePage === "tnbqSurvey") return <TnbqSurveyPage />;
+    if (activePage === "tnbqCatalog") return <TnbqCatalogPage />;
+    if (activePage === "tnbqList" || activePage === "tnbqImport") return <TnbqModule mode={activePage === "tnbqImport" ? "import" : "list"} onImported={() => setActivePage("tnbqList")} />;
     if (activePage === "tanHoaAdmissionTcList") return <TanHoaAdmissionTcListPage />;
     if (activePage === "tanHoaAdmissionTcImport") return <TanHoaAdmissionTcImportPage />;
     if (activePage === "tanHoaPaidKskList") return <TanHoaPaidKskListPage />;
@@ -57,7 +109,7 @@ function App() {
     if (activePage === "tanHoaNkList") return <TanHoaNkListPage />;
     if (activePage === "tanHoaInpatientList") return <TanHoaInpatientListPage />;
     if (activePage === "tanHoaImport") return <TanHoaImportPage />;
-    if (activePage === "dashboard") return <DashboardHome selectedModule={selectedModule} onSelectModule={(moduleId) => { setSelectedModule(moduleId); setActivePage(moduleId === "health" ? "customers" : "dashboard"); }} />;
+    if (activePage === "dashboard") return <DashboardHome modules={modules} selectedModule={selectedModule} onSelectModule={(moduleId) => { setSelectedModule(moduleId); setActivePage(moduleId === "health" ? "customers" : moduleId === "tnbq" ? "tnbqList" : moduleId === "system" ? "users" : "dashboard"); }} />;
     if (activePage === "campaignOverview") return <CampaignDashboard />;
     if (activePage === "campaignData") return <CampaignDataPage />;
     if (activePage === "healthObjectStatistics") return <HealthObjectStatisticsPage key={selectedObjectType ?? "total"} initialObjectType={selectedObjectType} />;
@@ -88,6 +140,8 @@ function App() {
 
   return (
     <AdminLayout
+      modules={modules}
+      profile={profile}
       activePage={activePage}
       setActivePage={(page) => { setSelectedExaminationPlace(null); setSelectedObjectType(null); setActivePage(page); }}
       selectedModule={selectedModule}

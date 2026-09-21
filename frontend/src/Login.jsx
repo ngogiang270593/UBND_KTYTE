@@ -24,8 +24,8 @@ function Login({ onLogin }) {
       localStorage.setItem("role", res.data.role);
 
       onLogin(res.data.token);
-    } catch {
-      setError("Sai tài khoản hoặc mật khẩu");
+    } catch (error) {
+      setError(error.response?.data?.message || "Không thể đăng nhập. Vui lòng kiểm tra tài khoản và kết nối.");
     } finally {
       setLoading(false);
     }
@@ -48,7 +48,7 @@ function Login({ onLogin }) {
             </h2>
 
             <p className="text-muted mb-0">
-              Hệ thống quản lý hồ sơ khám
+              Hệ thống quản lý
             </p>
           </div>
 

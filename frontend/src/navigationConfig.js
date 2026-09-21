@@ -1,4 +1,13 @@
 export const appModules = [
+  { id: "system", title: "Quản trị hệ thống", icon: "🔐", links: [
+    { key: "users", label: "Tài khoản và phân quyền", icon: "👥" },
+  ]},
+  { id: "tnbq", title: "Thống kê TNBQ", icon: "📊", links: [
+    { key: "tnbqList", label: "Bảng kê hộ", icon: "📋" },
+    { key: "tnbqImport", label: "Import bảng kê hộ", icon: "📥" },
+    { key: "tnbqSurvey", label: "Nhập phiếu thu thập", icon: "📝" },
+    { key: "tnbqCatalog", label: "Danh mục", icon: "📚" },
+  ]},
   { id: "health", title: "Khám sức khỏe", icon: "🩺", links: [
     { key: "customers", label: "Nhập khám sức khỏe", icon: "👤" },
     { key: "importData", label: "Import dữ liệu", icon: "📥" },

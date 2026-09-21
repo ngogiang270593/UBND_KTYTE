@@ -1,4 +1,5 @@
 using backend.Data;
+using backend.Security;
 using Microsoft.Data.Sqlite;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
@@ -75,7 +76,7 @@ Directory.CreateDirectory(dataDirectory);
 var databasePath = Path.Combine(dataDirectory, "app2026.db");
 Console.WriteLine($"SQLite database path: {databasePath}");
 
-builder.Services.AddControllers();
+builder.Services.AddControllers(options => options.Filters.Add<ModuleAuthorizationFilter>());
 
 builder.Services.AddDbContext<AppDbContext>(options =>
 {
@@ -141,6 +142,7 @@ using (var scope = app.Services.CreateScope())
     if (db.Database.IsNpgsql())
     {
         db.Database.ExecuteSqlRaw("""
+            ALTER TABLE "TnbqSurveys" ADD COLUMN IF NOT EXISTS "IsInvalid" boolean NOT NULL DEFAULT FALSE;
             ALTER TABLE "Customers" ADD COLUMN IF NOT EXISTS "Phone" text NOT NULL DEFAULT '';
             ALTER TABLE "Customers" ADD COLUMN IF NOT EXISTS "ObjectType" text NOT NULL DEFAULT '';
             ALTER TABLE "Customers" ADD COLUMN IF NOT EXISTS "PhoneNumber" text NOT NULL DEFAULT '';
@@ -171,6 +173,115 @@ using (var scope = app.Services.CreateScope())
 
     if (db.Database.IsSqlite())
     {
+    db.Database.ExecuteSqlRaw("""
+        CREATE TABLE IF NOT EXISTS TnbqSurveys (
+            Id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+            Year INTEGER NOT NULL, Commune TEXT NOT NULL, CommuneCode TEXT NOT NULL,
+            Hamlet TEXT NOT NULL, HamletCode TEXT NOT NULL, HouseholdNumber TEXT NOT NULL,
+            HeadName TEXT NOT NULL, Address TEXT NOT NULL, Phone TEXT NOT NULL,
+            Members INTEGER NOT NULL, IdentityKey TEXT NOT NULL, Revision INTEGER NOT NULL, IsInvalid INTEGER NOT NULL DEFAULT 0,
+            CreatedAt TEXT NOT NULL, UpdatedAt TEXT NOT NULL, UpdatedBy TEXT NOT NULL
+        );
+        CREATE UNIQUE INDEX IF NOT EXISTS IX_TnbqSurveys_Year_IdentityKey ON TnbqSurveys(Year, IdentityKey);
+        CREATE TABLE IF NOT EXISTS TnbqSurveyCrops (
+            SurveyId INTEGER NOT NULL PRIMARY KEY,
+            HasIncome INTEGER NULL,
+            RowsJson TEXT NOT NULL DEFAULT '[]',
+            FOREIGN KEY (SurveyId) REFERENCES TnbqSurveys(Id) ON DELETE CASCADE
+        );
+        CREATE TABLE IF NOT EXISTS TnbqSurveyLivestock (
+            SurveyId INTEGER NOT NULL PRIMARY KEY,
+            HasIncome INTEGER NULL,
+            RowsJson TEXT NOT NULL DEFAULT '[]',
+            FOREIGN KEY (SurveyId) REFERENCES TnbqSurveys(Id) ON DELETE CASCADE
+        );
+        CREATE TABLE IF NOT EXISTS TnbqSurveyForestry (
+            SurveyId INTEGER NOT NULL PRIMARY KEY,
+            HasIncome INTEGER NULL,
+            RowsJson TEXT NOT NULL DEFAULT '[]',
+            FOREIGN KEY (SurveyId) REFERENCES TnbqSurveys(Id) ON DELETE CASCADE
+        );
+        CREATE TABLE IF NOT EXISTS TnbqSurveyAquaculture (
+            SurveyId INTEGER NOT NULL PRIMARY KEY,
+            HasIncome INTEGER NULL,
+            RowsJson TEXT NOT NULL DEFAULT '[]',
+            FOREIGN KEY (SurveyId) REFERENCES TnbqSurveys(Id) ON DELETE CASCADE
+        );
+        CREATE TABLE IF NOT EXISTS TnbqSurveyBusiness (
+            SurveyId INTEGER NOT NULL PRIMARY KEY,
+            HasIncome INTEGER NULL,
+            RowsJson TEXT NOT NULL DEFAULT '[]',
+            FOREIGN KEY (SurveyId) REFERENCES TnbqSurveys(Id) ON DELETE CASCADE
+        );
+        CREATE TABLE IF NOT EXISTS TnbqSurveyOtherIncome (
+            SurveyId INTEGER NOT NULL PRIMARY KEY,
+            DataJson TEXT NOT NULL DEFAULT '{{}}',
+            FOREIGN KEY (SurveyId) REFERENCES TnbqSurveys(Id) ON DELETE CASCADE
+        );
+        CREATE TABLE IF NOT EXISTS TnbqSurveySalary (
+            SurveyId INTEGER NOT NULL PRIMARY KEY,
+            HasIncome INTEGER NULL,
+            RowsJson TEXT NOT NULL DEFAULT '[]',
+            FOREIGN KEY (SurveyId) REFERENCES TnbqSurveys(Id) ON DELETE CASCADE
+        );
+        """);
+    using (var command = db.Database.GetDbConnection().CreateCommand())
+    {
+        command.CommandText = "PRAGMA table_info('TnbqSurveys');";
+        db.Database.OpenConnection();
+        var hasTnbqSurveyInvalidColumn = false;
+        using (var reader = command.ExecuteReader())
+        {
+            while (reader.Read())
+            {
+                if (string.Equals(reader.GetString(1), "IsInvalid", StringComparison.OrdinalIgnoreCase))
+                {
+                    hasTnbqSurveyInvalidColumn = true;
+                    break;
+                }
+            }
+        }
+        db.Database.CloseConnection();
+        if (!hasTnbqSurveyInvalidColumn)
+            db.Database.ExecuteSqlRaw("ALTER TABLE TnbqSurveys ADD COLUMN IsInvalid INTEGER NOT NULL DEFAULT 0;");
+    }
+
+    db.Database.ExecuteSqlRaw("""
+        CREATE TABLE IF NOT EXISTS UserModuleAccesses (
+            UserId INTEGER NOT NULL PRIMARY KEY,
+            ModuleIds TEXT NOT NULL DEFAULT '[]',
+            IsActive INTEGER NOT NULL DEFAULT 1,
+            FOREIGN KEY (UserId) REFERENCES Users(Id) ON DELETE CASCADE
+        );
+        """);
+    db.Database.ExecuteSqlRaw("""
+        CREATE TABLE IF NOT EXISTS TnbqHouseholds (
+            Id INTEGER NOT NULL CONSTRAINT PK_TnbqHouseholds PRIMARY KEY AUTOINCREMENT,
+            Year INTEGER NOT NULL, HouseNumber TEXT NOT NULL, HouseholdNumber TEXT NOT NULL,
+            HeadName TEXT NOT NULL, Address TEXT NOT NULL, Members INTEGER NOT NULL,
+            Note TEXT NOT NULL, Province TEXT NOT NULL, Commune TEXT NOT NULL,
+            Hamlet TEXT NOT NULL, AreaType TEXT NOT NULL, Preparer TEXT NOT NULL,
+            Phone TEXT NOT NULL, CreatedAt TEXT NOT NULL
+        );
+        CREATE INDEX IF NOT EXISTS IX_TnbqHouseholds_Year ON TnbqHouseholds(Year);
+        CREATE INDEX IF NOT EXISTS IX_TnbqHouseholds_Year_Hamlet ON TnbqHouseholds(Year, Hamlet);
+        """);
+    db.Database.ExecuteSqlRaw("""
+        CREATE TABLE IF NOT EXISTS TnbqCommunes (
+            Id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+            Name TEXT NOT NULL, Code TEXT NOT NULL, Province TEXT NOT NULL,
+            IsDefault INTEGER NOT NULL DEFAULT 0
+        );
+        CREATE UNIQUE INDEX IF NOT EXISTS IX_TnbqCommunes_Code ON TnbqCommunes(Code);
+        CREATE TABLE IF NOT EXISTS TnbqHamlets (
+            Id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+            CommuneId INTEGER NOT NULL, Name TEXT NOT NULL, Code TEXT NOT NULL,
+            IsDefault INTEGER NOT NULL DEFAULT 0,
+            FOREIGN KEY (CommuneId) REFERENCES TnbqCommunes(Id) ON DELETE CASCADE
+        );
+        CREATE UNIQUE INDEX IF NOT EXISTS IX_TnbqHamlets_CommuneId_Code ON TnbqHamlets(CommuneId, Code);
+        """);
+
     db.Database.ExecuteSqlRaw("""
         CREATE TABLE IF NOT EXISTS TanHoaAdmissionTcRecords (
             Id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
@@ -426,6 +537,26 @@ using (var scope = app.Services.CreateScope())
             Password = BCrypt.Net.BCrypt.HashPassword("123456"),
             FullName = "Quản trị viên",
             Role = "Admin"
+        });
+        db.SaveChanges();
+    }
+}
+
+// Seed once: preserve changed credentials on subsequent application starts.
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    db.Database.ExecuteSqlRaw("""
+        CREATE UNIQUE INDEX IF NOT EXISTS "IX_Users_NormalizedUsername" ON "Users" (lower("Username"));
+        """);
+    if (!db.Users.Any(x => x.Username.ToLower() == "quantrihethong"))
+    {
+        db.Users.Add(new backend.Models.User
+        {
+            Username = "quantrihethong",
+            Password = BCrypt.Net.BCrypt.HashPassword("123456"),
+            FullName = "Quản trị hệ thống",
+            Role = ModuleAccess.SystemAdminRole
         });
         db.SaveChanges();
     }

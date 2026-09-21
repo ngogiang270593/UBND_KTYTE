@@ -1,12 +1,12 @@
 import { useState } from "react";
-import { appModules, findModuleByPage } from "./navigationConfig";
+import { findModuleByPage } from "./navigationConfig";
 
-function AdminLayout({ children, onLogout, activePage, setActivePage, selectedModule, setSelectedModule }) {
+function AdminLayout({ children, onLogout, activePage, setActivePage, selectedModule, setSelectedModule, modules, profile }) {
   const [showUserMenu, setShowUserMenu] = useState(false);
-  const fullName = localStorage.getItem("fullName") || "Admin";
-  const role = localStorage.getItem("role") || "User";
+  const fullName = profile.fullName;
+  const role = profile.isSystemAdmin ? "Quản trị hệ thống" : "Người dùng";
   const pageModule = findModuleByPage(activePage);
-  const currentModule = appModules.find((module) => module.id === (pageModule?.id || selectedModule));
+  const currentModule = modules.find((module) => module.id === (pageModule?.id || selectedModule));
   const currentLink = pageModule?.links.find((link) => link.key === activePage);
   const currentTitle = activePage === "dashboard" ? "Dashboard" : activePage === "changePassword" ? "Đổi mật khẩu" : currentLink?.label || "Dashboard";
 

@@ -81,18 +81,19 @@ namespace backend.Controllers
             var updateMode = request.UpdateMode?.Trim().ToLowerInvariant() ?? "address";
             var updateBirthDateOnly = request.UpdateBirthDateOnly || updateMode == "birth-date";
             if (!new[] { "all", "cccd", "name-date", "name-year" }.Contains(matchType)) matchType = "all";
-            var validSources = new[] { "all", "commune", "inpatient", "outpatient", "medical" };
+            var validSources = new[] { "all", "commune", "inpatient", "outpatient", "medical", "nk" };
             if (!validSources.Contains(source)) source = "all";
             var subjects = new List<AddressLookupRow>();
             if (source is "all" or "commune") subjects.AddRange(await _context.CommuneSubjectRecords.AsNoTracking().Where(x => x.DiaChi != "").Select(x => new AddressLookupRow(x.Cccd, x.HoTen, x.NgaySinh, "", x.DiaChi, "commune", "Đối tượng xã")).ToListAsync());
             if (source is "all" or "inpatient") subjects.AddRange(await _context.TanChauInpatientRecords.AsNoTracking().Where(x => x.DiaChi != "").Select(x => new AddressLookupRow(x.SoCccd, x.HoTen, x.NgaySinh, "", x.DiaChi, "inpatient", "Nội trú Tân Châu")).ToListAsync());
             if (source is "all" or "outpatient") subjects.AddRange(await _context.TanChauOutpatientRecords.AsNoTracking().Where(x => x.DiaChi != "").Select(x => new AddressLookupRow(x.Cccd, x.HoTen, "", x.NamSinh, x.DiaChi, "outpatient", "Ngoại trú Tân Châu")).ToListAsync());
+            if (source is "all" or "nk") subjects.AddRange(await _context.TanHoaNkRecords.AsNoTracking().Where(x => x.DiaChi != "").Select(x => new AddressLookupRow(x.Cccd, x.HoTen, x.NgaySinh, x.NamSinh, x.DiaChi, "nk", "Danh sách NK")).ToListAsync());
             if (source is "all" or "medical")
             {
                 var medicalRows = await _context.MedicalRecords.AsNoTracking().Where(x => x.Address != "").Select(x => new { x.CitizenId, x.FullName, x.DateOfBirth, x.Address }).ToListAsync();
                 subjects.AddRange(medicalRows.Select(x => new AddressLookupRow(x.CitizenId, x.FullName, x.DateOfBirth?.ToString("yyyy-MM-dd") ?? "", x.DateOfBirth?.Year.ToString() ?? "", x.Address, "medical", "Y bạ")));
             }
-            var sourceLabel = source == "all" ? "4 danh sách" : subjects.FirstOrDefault()?.SourceLabel ?? source;
+            var sourceLabel = source == "all" ? "5 danh sách" : subjects.FirstOrDefault()?.SourceLabel ?? source;
             var byCccd = subjects.Where(x => !string.IsNullOrWhiteSpace(x.Cccd)).GroupBy(x => NormalizeIdentity(x.Cccd)).ToDictionary(x => x.Key, x => x.First());
             var byNameBirthDate = subjects.Where(x => !string.IsNullOrWhiteSpace(x.FullName) && !string.IsNullOrWhiteSpace(x.BirthDate)).GroupBy(x => $"{NormalizeText(x.FullName)}|{NormalizeDate(x.BirthDate)}").ToDictionary(x => x.Key, x => x.First());
             var byNameBirthYear = subjects.Where(x => !string.IsNullOrWhiteSpace(x.FullName) && (!string.IsNullOrWhiteSpace(x.BirthYear) || !string.IsNullOrWhiteSpace(x.BirthDate))).GroupBy(x => $"{NormalizeText(x.FullName)}|{NormalizeYear(!string.IsNullOrWhiteSpace(x.BirthYear) ? x.BirthYear : x.BirthDate)}").ToDictionary(x => x.Key, x => x.First());
@@ -250,6 +251,13 @@ namespace backend.Controllers
         public sealed class ExportCustomersRequest
         {
             public List<int> CustomerIds { get; set; } = new();
+            public List<ExportCustomersSheetRequest> Sheets { get; set; } = new();
+        }
+
+        public sealed class ExportCustomersSheetRequest
+        {
+            public string Name { get; set; } = string.Empty;
+            public List<int> CustomerIds { get; set; } = new();
         }
 
         [HttpPost("customers/export")]
@@ -268,6 +276,7 @@ namespace backend.Controllers
                 .ThenBy(x => x.Name)
                 .Select(x => new
                 {
+                    x.Id,
                     x.Code,
                     x.ExaminationPlace,
                     x.CitizenIdIssueDate,
@@ -405,6 +414,50 @@ namespace backend.Controllers
             worksheet.Range(4, 1, rowIndex - 1, 12)
                 .SetAutoFilter();
 
+            var usedSheetNames = new HashSet<string>(workbook.Worksheets.Select(x => x.Name), StringComparer.OrdinalIgnoreCase);
+            foreach (var requestedSheet in request.Sheets ?? new List<ExportCustomersSheetRequest>())
+            {
+                var sheetName = GetUniqueExcelSheetName(requestedSheet.Name, usedSheetNames);
+                var sheetCustomerIds = requestedSheet.CustomerIds?.Distinct().ToHashSet() ?? new HashSet<int>();
+                var sheetCustomers = customers.Where(x => sheetCustomerIds.Contains(x.Id)).ToList();
+                var groupedWorksheet = workbook.Worksheets.Add(sheetName);
+                worksheet.Range("A1:L4").CopyTo(groupedWorksheet.Cell("A1"));
+                groupedWorksheet.Range("A1:L1").Merge();
+                groupedWorksheet.Range("A2:L2").Merge();
+                groupedWorksheet.Cell("A1").Value = $"DANH SÁCH KHÁM SỨC KHỎE - {requestedSheet.Name}";
+                for (var column = 1; column <= 12; column++) groupedWorksheet.Column(column).Width = worksheet.Column(column).Width;
+                groupedWorksheet.Column(8).Style.Alignment.WrapText = true;
+                groupedWorksheet.SheetView.FreezeRows(4);
+                var groupedRowIndex = 5;
+                var groupedStt = 1;
+                foreach (var customer in sheetCustomers)
+                {
+                    groupedWorksheet.Cell(groupedRowIndex, 1).Value = groupedStt;
+                    groupedWorksheet.Cell(groupedRowIndex, 2).Value = customer.Code;
+                    groupedWorksheet.Cell(groupedRowIndex, 3).Value = customer.Name;
+                    groupedWorksheet.Cell(groupedRowIndex, 4).Value = customer.ObjectType;
+                    groupedWorksheet.Cell(groupedRowIndex, 5).Value = customer.PhoneNumber;
+                    groupedWorksheet.Cell(groupedRowIndex, 6).Value = customer.TaxCode;
+                    groupedWorksheet.Cell(groupedRowIndex, 7).Value = customer.ExaminationDate;
+                    groupedWorksheet.Cell(groupedRowIndex, 8).Value = customer.Address;
+                    groupedWorksheet.Cell(groupedRowIndex, 9).Value = customer.Occupation;
+                    groupedWorksheet.Cell(groupedRowIndex, 10).Value = customer.BirthDate;
+                    groupedWorksheet.Cell(groupedRowIndex, 11).Value = customer.ExaminationPlace;
+                    groupedWorksheet.Cell(groupedRowIndex, 12).Value = customer.CitizenIdIssueDate;
+                    groupedWorksheet.Cell(groupedRowIndex, 2).Style.NumberFormat.Format = "@";
+                    groupedWorksheet.Cell(groupedRowIndex, 4).Style.NumberFormat.Format = "@";
+                    groupedWorksheet.Cell(groupedRowIndex, 7).Style.DateFormat.Format = "dd/MM/yyyy";
+                    groupedWorksheet.Cell(groupedRowIndex, 10).Style.DateFormat.Format = "dd/MM/yyyy";
+                    groupedWorksheet.Cell(groupedRowIndex, 12).Style.DateFormat.Format = "dd/MM/yyyy";
+                    groupedWorksheet.Range(groupedRowIndex, 1, groupedRowIndex, 12).Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+                    groupedWorksheet.Range(groupedRowIndex, 1, groupedRowIndex, 12).Style.Border.InsideBorder = XLBorderStyleValues.Thin;
+                    if (groupedStt % 2 == 0) groupedWorksheet.Range(groupedRowIndex, 1, groupedRowIndex, 12).Style.Fill.BackgroundColor = XLColor.FromHtml("#EFF6FF");
+                    groupedRowIndex++;
+                    groupedStt++;
+                }
+                groupedWorksheet.Range(4, 1, Math.Max(4, groupedRowIndex - 1), 12).SetAutoFilter();
+            }
+
             using var stream = new MemoryStream();
             workbook.SaveAs(stream);
 
@@ -423,6 +476,21 @@ namespace backend.Controllers
             );
         }
 
+        private static string GetUniqueExcelSheetName(string? name, ISet<string> usedNames)
+        {
+            var invalidCharacters = new[] { ':', '\\', '/', '?', '*', '[', ']' };
+            var baseName = new string((name ?? string.Empty).Trim().Where(character => !invalidCharacters.Contains(character)).ToArray());
+            if (string.IsNullOrWhiteSpace(baseName)) baseName = "Danh sách";
+            baseName = baseName.Length > 31 ? baseName[..31] : baseName;
+            var candidate = baseName;
+            var suffix = 2;
+            while (!usedNames.Add(candidate))
+            {
+                var suffixText = $" ({suffix++})";
+                candidate = baseName[..Math.Min(baseName.Length, 31 - suffixText.Length)] + suffixText;
+            }
+            return candidate;
+        }
         private IQueryable<backend.Models.Customer> BuildCustomerSearchQuery(
             string? code,
             string? name,

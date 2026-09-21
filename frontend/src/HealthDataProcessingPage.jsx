@@ -24,13 +24,14 @@ export default function HealthDataProcessingPage() {
   const [matchType, setMatchType] = useState("all");
   const [previews, setPreviews] = useState({});
   const [loading, setLoading] = useState(true);
+  const [exporting, setExporting] = useState(false);
   const [checking, setChecking] = useState(false);
   const [updatingAll, setUpdatingAll] = useState(false);
   const [updatingId, setUpdatingId] = useState(null);
   const [message, setMessage] = useState("");
   const [objectTypeRows, setObjectTypeRows] = useState([]);
   const [loadingObjectTypes, setLoadingObjectTypes] = useState(false);
-  const [pages, setPages] = useState({ all: 1, address: 1, birth: 1, objectType: 1 });
+  const [pages, setPages] = useState({ all: 1, address: 1, birth: 1, code: 1, objectType: 1 });
 
   const loadData = async () => {
     setLoading(true);
@@ -71,10 +72,14 @@ export default function HealthDataProcessingPage() {
     () => customers.filter((customer) => !customer.birthDate),
     [customers]
   );
-  const processingRows = activeTab === "missing-address" ? missingAddress : missingBirthDate;
+  const missingCode = useMemo(
+    () => customers.filter((customer) => !String(customer.code ?? "").trim()),
+    [customers]
+  );
+  const processingRows = activeTab === "missing-address" ? missingAddress : activeTab === "missing-birth-date" ? missingBirthDate : [];
   const isProcessingTab = activeTab === "missing-address" || activeTab === "missing-birth-date";
-  const visibleRows = isProcessingTab ? processingRows : customers;
-  const pageKey = activeTab === 'missing-address' ? 'address' : activeTab === 'missing-birth-date' ? 'birth' : activeTab === 'object-type' ? 'objectType' : 'all';
+  const visibleRows = activeTab === "missing-address" ? missingAddress : activeTab === "missing-birth-date" ? missingBirthDate : activeTab === "missing-code" ? missingCode : customers;
+  const pageKey = activeTab === "missing-address" ? "address" : activeTab === "missing-birth-date" ? "birth" : activeTab === "missing-code" ? "code" : activeTab === "object-type" ? "objectType" : "all";
   const sortedMissingBirthDate = useMemo(
     () =>
       missingBirthDate
@@ -135,6 +140,28 @@ export default function HealthDataProcessingPage() {
     await loadData();
   };
 
+  const exportExcel = async () => {
+    if (!activeRows.length) return;
+    setExporting(true);
+    setMessage("");
+    try {
+      const response = await api.post("/PrintVoucher/customers/export", { customerIds: activeRows.map((customer) => customer.id) }, { responseType: "blob" });
+      const disposition = response.headers["content-disposition"];
+      const utf8 = disposition?.match(/filename\*=UTF-8''([^;]+)/i);
+      const normal = disposition?.match(/filename="?([^";]+)"?/i);
+      const fileName = utf8?.[1] ? decodeURIComponent(utf8[1]) : normal?.[1] || "DanhSachKhamSucKhoe.xlsx";
+      const url = URL.createObjectURL(response.data);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      setMessage(error.response?.data instanceof Blob ? await error.response.data.text() : "Xuất Excel thất bại.");
+    } finally { setExporting(false); }
+  };
   const updateAll = async () => {
     setUpdatingAll(true); setMessage("");
     try { await updateCustomers(processingRows.map((item) => item.id)); }
@@ -195,16 +222,19 @@ export default function HealthDataProcessingPage() {
         {message && <div className="alert alert-info">{message}</div>}
         <ul className="nav nav-tabs mb-4">
           <li className="nav-item"><button className={`nav-link ${activeTab === "all" ? "active" : ""}`} onClick={() => setActiveTab("all")}>Tất cả dữ liệu <span className="badge bg-secondary ms-1">{customers.length}</span></button></li>
-          <li className="nav-item"><button className={`nav-link ${activeTab === "missing-address" ? "active" : ""}`} onClick={() => setActiveTab("missing-address")}>Chưa có thông tin <span className="badge bg-warning text-dark ms-1">{missingAddress.length}</span></button></li>
+          <li className="nav-item"><button className={`nav-link ${activeTab === "missing-address" ? "active" : ""}`} onClick={() => setActiveTab("missing-address")}>Địa chỉ không đúng ấp <span className="badge bg-warning text-dark ms-1">{missingAddress.length}</span></button></li>
           <li className="nav-item"><button className={`nav-link ${activeTab === "missing-birth-date" ? "active" : ""}`} onClick={() => { setActiveTab("missing-birth-date"); if (matchType === "name-date") setMatchType("all"); }}>Chưa có ngày sinh <span className="badge bg-danger ms-1">{missingBirthDate.length}</span></button></li>
+          <li className="nav-item"><button className={`nav-link ${activeTab === "missing-code" ? "active" : ""}`} onClick={() => setActiveTab("missing-code")}>Chưa có căn cước <span className="badge bg-secondary ms-1">{missingCode.length}</span></button></li>
           <li className="nav-item"><button className={`nav-link ${activeTab === "object-type" ? "active" : ""}`} onClick={() => setActiveTab("object-type")}>Kiểm tra đối tượng <span className="badge bg-primary ms-1">{objectTypeRows.length}</span></button></li>
         </ul>
 
         {isProcessingTab && <div className="rounded border bg-light p-3 mb-4"><div className="row g-3 align-items-end">
-          <div className="col-lg-4"><label className="form-label fw-semibold">Loại khớp</label><select className="form-select" value={matchType} onChange={(event) => { setMatchType(event.target.value); setPages((current) => ({ ...current, birth: 1 })); }} disabled={updatingAll || updatingId !== null}><option value="all">{activeTab === "missing-birth-date" ? "Tự động: CCCD → Tên + Năm sinh" : "Tự động: CCCD → Tên + Ngày sinh → Tên + Năm sinh"}</option><option value="cccd">Chỉ khớp CCCD</option>{activeTab !== "missing-birth-date" && <option value="name-date">Chỉ khớp Họ tên + Ngày sinh</option>}<option value="name-year">Chỉ khớp Họ tên + Năm sinh</option></select></div>
-          <div className="col-lg-4"><label className="form-label fw-semibold">Nguồn đối chiếu</label><select className="form-select" value={source} onChange={(event) => { setSource(event.target.value); setPages((current) => ({ ...current, birth: 1 })); }} disabled={updatingAll || updatingId !== null}><option value="all">Tất cả 4 danh sách</option><option value="commune">Đối tượng xã</option><option value="inpatient">Nội trú Tân Châu</option><option value="outpatient">Ngoại trú Tân Châu</option><option value="medical">Y bạ</option></select></div>
+          <div className="col-lg-4"><label className="form-label fw-semibold">Loại khớp</label><select className="form-select" value={matchType} onChange={(event) => setMatchType(event.target.value)} disabled={updatingAll || updatingId !== null}><option value="all">Tự động đối chiếu</option><option value="cccd">Chỉ khớp CCCD</option>{activeTab !== "missing-birth-date" && <option value="name-date">Chỉ khớp Họ tên + Ngày sinh</option>}<option value="name-year">Chỉ khớp Họ tên + Năm sinh</option></select></div>
+          <div className="col-lg-4"><label className="form-label fw-semibold">Nguồn đối chiếu</label><select className="form-select" value={source} onChange={(event) => setSource(event.target.value)} disabled={updatingAll || updatingId !== null}><option value="all">Tất cả 5 danh sách</option><option value="commune">Đối tượng xã</option><option value="inpatient">Nội trú Tân Châu</option><option value="outpatient">Ngoại trú Tân Châu</option><option value="medical">Y bạ</option><option value="nk">Danh sách NK</option></select></div>
           <div className="col-lg-4"><button className="btn btn-warning fw-bold w-100" onClick={updateAll} disabled={updatingAll || checking || !processingRows.length}>{updatingAll ? "Đang cập nhật..." : activeTab === "missing-birth-date" ? "Cập nhật tất cả ngày sinh" : "Cập nhật tất cả địa chỉ"}</button></div>
-        </div><div className="small text-muted mt-2">{activeTab === "missing-birth-date" ? "Chế độ này chỉ cập nhật ngày sinh, không thay đổi địa chỉ." : "Chế độ này cập nhật địa chỉ và ngày sinh theo thông tin đối chiếu."}</div></div>}
+        </div></div>}
+
+        {activeTab !== "object-type" && <div className="d-flex justify-content-end mb-3"><button className="btn btn-success" onClick={exportExcel} disabled={loading || exporting || !activeRows.length}>{exporting ? "Đang xuất..." : "Xuất Excel"}</button></div>}
 
         {activeTab === "object-type" ? <>
           <div className="d-flex flex-wrap align-items-center justify-content-between gap-3 rounded border bg-light p-3 mb-3">

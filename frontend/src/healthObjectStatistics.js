@@ -15,3 +15,6 @@ export function groupHealthRecords(customers, catalog, field = "objectType", inc
 }
 
 export const groupHealthObjects = (customers, catalog) => groupHealthRecords(customers, catalog);
+
+export const isUnder18Object = (customer) => normalizeObjectType(customer.objectType) === normalizeObjectType('DƯỚI 18');
+export const isElderlyObject = (customer) => normalizeObjectType(customer.objectType) === normalizeObjectType('NGƯỜI CAO TUỔI');

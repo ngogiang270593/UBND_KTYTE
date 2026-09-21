@@ -19,7 +19,15 @@ public static class SqliteToPostgresImporter
 
         var entityTypes = destination.Model.GetEntityTypes()
             .Where(entityType => !entityType.IsOwned() && entityType.ClrType is not null)
-            .OrderBy(entityType => entityType.GetTableName(), StringComparer.Ordinal)
+            .OrderBy(entityType => entityType.ClrType == typeof(backend.Models.User) ? 0
+                : (entityType.ClrType == typeof(backend.Models.TnbqSurveySalary)
+                    || entityType.ClrType == typeof(backend.Models.TnbqSurveyCrops)
+                    || entityType.ClrType == typeof(backend.Models.TnbqSurveyLivestock)
+                    || entityType.ClrType == typeof(backend.Models.TnbqSurveyForestry)
+                    || entityType.ClrType == typeof(backend.Models.TnbqSurveyAquaculture)
+                    || entityType.ClrType == typeof(backend.Models.TnbqSurveyBusiness)
+                    || entityType.ClrType == typeof(backend.Models.TnbqSurveyOtherIncome)) ? 2 : 1)
+            .ThenBy(entityType => entityType.GetTableName(), StringComparer.Ordinal)
             .ToList();
 
         var sourceTableNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
