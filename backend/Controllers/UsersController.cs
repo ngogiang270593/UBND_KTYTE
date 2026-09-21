@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 using System.Text.Json;
 using backend.Data;
 using backend.Models;
@@ -31,24 +31,28 @@ public class UsersController(AppDbContext db) : ControllerBase
             return BadRequest(new { message = "Module không hợp lệ." });
         if (await db.Users.AnyAsync(x => x.Username.ToLower() == username))
             return Conflict(new { message = "Tên đăng nhập đã tồn tại." });
-        await using var transaction = await db.Database.BeginTransactionAsync();
-        var user = new User { Username = username, FullName = request.FullName.Trim(),
-            Password = BCrypt.Net.BCrypt.HashPassword(request.Password), Role = "User" };
-        db.Users.Add(user);
+        var strategy = db.Database.CreateExecutionStrategy();
+        User? user = null;
         try
         {
-            await db.SaveChangesAsync();
-            db.UserModuleAccesses.Add(new UserModuleAccess { UserId = user.Id,
-                ModuleIds = JsonSerializer.Serialize(request.Modules.Distinct().ToArray()), IsActive = true });
-            await db.SaveChangesAsync();
-            await transaction.CommitAsync();
+            await strategy.ExecuteAsync(async () =>
+            {
+                await using var transaction = await db.Database.BeginTransactionAsync();
+                user = new User { Username = username, FullName = request.FullName.Trim(),
+                    Password = BCrypt.Net.BCrypt.HashPassword(request.Password), Role = "User" };
+                db.Users.Add(user);
+                await db.SaveChangesAsync();
+                db.UserModuleAccesses.Add(new UserModuleAccess { UserId = user.Id,
+                    ModuleIds = JsonSerializer.Serialize(request.Modules.Distinct().ToArray()), IsActive = true });
+                await db.SaveChangesAsync();
+                await transaction.CommitAsync();
+            });
         }
         catch (DbUpdateException)
         {
-            await transaction.RollbackAsync();
             return Conflict(new { message = "Không thể tạo tài khoản. Vui lòng kiểm tra tên đăng nhập và thử lại." });
         }
-        return Ok(await ModuleAccess.GetProfile(db, user));
+        return Ok(await ModuleAccess.GetProfile(db, user!));
     }
 
     [HttpPut("{id:int}/access")]
@@ -87,4 +91,5 @@ public class UpdateAccessRequest
     public string[] Modules { get; set; } = [];
     public bool IsActive { get; set; } = true;
 }
+
 

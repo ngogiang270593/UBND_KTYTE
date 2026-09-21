@@ -6,6 +6,7 @@ export const appModules = [
     { key: "tnbqList", label: "Bảng kê hộ", icon: "📋" },
     { key: "tnbqImport", label: "Import bảng kê hộ", icon: "📥" },
     { key: "tnbqSurvey", label: "Nhập phiếu thu thập", icon: "📝" },
+    { key: "tnbqSurveyStatistics", label: "\u0054\u0068\u1ed1\u006e\u0067 \u006b\u00ea \u0070\u0068\u0069\u1ebf\u0075", icon: "\ud83d\udcc8" },
     { key: "tnbqCatalog", label: "Danh mục", icon: "📚" },
   ]},
   { id: "health", title: "Khám sức khỏe", icon: "🩺", links: [

@@ -33,6 +33,7 @@ import HealthStatisticsPage from "./HealthStatisticsPage";
 import HealthObjectStatisticsPage from "./HealthObjectStatisticsPage";
 import TnbqModule from "./TnbqModule";
 import TnbqSurveyPage from "./TnbqSurveyPage";
+import TnbqSurveyStatisticsPage from "./TnbqSurveyStatisticsPage";
 import TnbqCatalogPage from "./TnbqCatalogPage";
 import UserManagementPage from "./UserManagementPage";
 import { appModules, findModuleByPage } from "./navigationConfig";
@@ -99,6 +100,7 @@ function App() {
     if (!canOpenPage) return <div className="alert alert-warning">Bạn không còn quyền truy cập chức năng này. Hãy chọn module khác trên Dashboard.</div>;
     if (activePage === "users") return <UserManagementPage />;
     if (activePage === "tnbqSurvey") return <TnbqSurveyPage />;
+    if (activePage === "tnbqSurveyStatistics") return <TnbqSurveyStatisticsPage />;
     if (activePage === "tnbqCatalog") return <TnbqCatalogPage />;
     if (activePage === "tnbqList" || activePage === "tnbqImport") return <TnbqModule mode={activePage === "tnbqImport" ? "import" : "list"} onImported={() => setActivePage("tnbqList")} />;
     if (activePage === "tanHoaAdmissionTcList") return <TanHoaAdmissionTcListPage />;
