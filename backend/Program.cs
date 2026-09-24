@@ -142,6 +142,8 @@ using (var scope = app.Services.CreateScope())
     if (db.Database.IsNpgsql())
     {
         db.Database.ExecuteSqlRaw("""
+            ALTER TABLE "ElderlyRecords" ADD COLUMN IF NOT EXISTS "NgaySinh" text NOT NULL DEFAULT '';
+            ALTER TABLE "ElderlyRecords" ADD COLUMN IF NOT EXISTS "IsChecked" boolean NOT NULL DEFAULT FALSE;
             ALTER TABLE "TnbqSurveys" ADD COLUMN IF NOT EXISTS "IsInvalid" boolean NOT NULL DEFAULT FALSE;
             ALTER TABLE "Customers" ADD COLUMN IF NOT EXISTS "Phone" text NOT NULL DEFAULT '';
             ALTER TABLE "Customers" ADD COLUMN IF NOT EXISTS "ObjectType" text NOT NULL DEFAULT '';
@@ -295,6 +297,12 @@ using (var scope = app.Services.CreateScope())
             GioiTinh TEXT NULL, Cccd TEXT NULL, DiaChi TEXT NULL,
             SourceFileName TEXT NULL, ImportedAt TEXT NOT NULL
         );
+        CREATE TABLE IF NOT EXISTS ElderlyRecords (
+            Id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+            HoTen TEXT NOT NULL, NamSinh TEXT NOT NULL, GioiTinh TEXT NOT NULL,
+            Cccd TEXT NOT NULL, DiaChi TEXT NOT NULL, NgayKham TEXT NOT NULL,
+            ImportedAt TEXT NOT NULL
+        );
         CREATE TABLE IF NOT EXISTS UpdatedInformationRecords (
             Id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
             Stt TEXT NOT NULL, Cccd TEXT NOT NULL, HoTen TEXT NOT NULL, DiaChi TEXT NOT NULL,
@@ -321,6 +329,19 @@ using (var scope = app.Services.CreateScope())
         CREATE UNIQUE INDEX IF NOT EXISTS IX_ExaminationNumbers_ExaminationDate_Number
             ON ExaminationNumbers (ExaminationDate, Number);
         """);
+    using (var command = db.Database.GetDbConnection().CreateCommand())
+    {
+        command.CommandText = "PRAGMA table_info('ElderlyRecords');";
+        db.Database.OpenConnection();
+        var columns = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        using (var reader = command.ExecuteReader())
+            while (reader.Read()) columns.Add(reader.GetString(1));
+        db.Database.CloseConnection();
+        if (!columns.Contains("NgaySinh"))
+            db.Database.ExecuteSqlRaw("ALTER TABLE ElderlyRecords ADD COLUMN NgaySinh TEXT NOT NULL DEFAULT '';");
+        if (!columns.Contains("IsChecked"))
+            db.Database.ExecuteSqlRaw("ALTER TABLE ElderlyRecords ADD COLUMN IsChecked INTEGER NOT NULL DEFAULT 0;");
+    }
     using (var command = db.Database.GetDbConnection().CreateCommand())
     {
         command.CommandText = "PRAGMA table_info('Customers');";

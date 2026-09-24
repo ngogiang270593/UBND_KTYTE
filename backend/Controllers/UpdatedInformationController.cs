@@ -144,4 +144,11 @@ public class UpdatedInformationController(AppDbContext db) : ControllerBase
         await db.SaveChangesAsync();
         return Ok(new { savedCount = rows.Count });
     }
+
+    [HttpDelete("all")]
+    public async Task<IActionResult> DeleteAll()
+    {
+        var count = await db.UpdatedInformationRecords.ExecuteDeleteAsync();
+        return Ok(new { count });
+    }
 }

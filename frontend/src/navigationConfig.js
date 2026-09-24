@@ -23,6 +23,7 @@ export const appModules = [
     { key: "campaignData", label: "Nhập số liệu chiến dịch", icon: "📝" },
   ]},
   { id: "data-processing", title: "Xử lý data", icon: "🧹", links: [
+    { key: "elderlyImport", label: "Import Người Cao Tuổi", icon: "📥" },
     { key: "updatedInformationImport", label: "Import thông tin cập nhật", icon: "📥" },
     { key: "healthDataProcessing", label: "Data khám sức khỏe", icon: "🩺" },
   ]},

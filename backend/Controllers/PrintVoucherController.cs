@@ -58,6 +58,8 @@ namespace backend.Controllers
                     x.BirthDate,
                     x.ExaminationDate,
                     x.Address,
+                    x.ExaminationPlace,
+                    x.CitizenIdIssueDate,
                     x.Occupation
                 })
                 .ToListAsync();

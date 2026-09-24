@@ -40,7 +40,7 @@ public class ModuleAuthorizationFilter(AppDbContext db) : IAsyncAuthorizationFil
         {
             "TnbqHouseholds" or "TnbqSurveys" or "TnbqCatalog" => ["tnbq"],
             "CampaignStats" => ["campaign"],
-            "UpdatedInformation" => ["data-processing"],
+            "UpdatedInformation" or "Elderly" => ["data-processing"],
             "Customers" => read && action.ActionName == "GetAll" ? ["health", "campaign"] : ["health"],
             "CatalogItems" => read ? ["health", "campaign", "data-processing", "people"] : ["health"],
             "ImportData" => read ? ["health", "stats"] : ["health"],

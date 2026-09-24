@@ -1,5 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import api from "./api";
+import PendingHealthUpdatesTab from "./PendingHealthUpdatesTab";
+import { collectPendingUpdates } from "./pendingHealthUpdates";
+import ElderlyProcessingTab from "./ElderlyProcessingTab";
 import UpdatedAddressTab from "./UpdatedAddressTab";
 import { useNotification } from "./NotificationProvider";
 
@@ -21,6 +24,12 @@ export default function HealthDataProcessingPage() {
   const { confirm } = useNotification();
   const [customers, setCustomers] = useState([]);
   const [hamlets, setHamlets] = useState([]);
+  const [elderlyRows, setElderlyRows] = useState([]);
+  const [elderlyLoading, setElderlyLoading] = useState(true);
+  const [elderlyError, setElderlyError] = useState("");
+  const [hamletsLoading, setHamletsLoading] = useState(true);
+  const [dataError, setDataError] = useState("");
+  const [hamletsError, setHamletsError] = useState("");
   const [activeTab, setActiveTab] = useState("missing-address");
   const [source, setSource] = useState("all");
   const [matchType, setMatchType] = useState("all");
@@ -36,12 +45,12 @@ export default function HealthDataProcessingPage() {
   const [pages, setPages] = useState({ all: 1, address: 1, birth: 1, code: 1, objectType: 1 });
 
   const loadData = async () => {
-    setLoading(true);
+    setLoading(true); setDataError("");
     try {
       const response = await api.get("/PrintVoucher/customers");
       setCustomers(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
-      setMessage(error.response?.data?.message || "Không tải được data khám sức khỏe.");
+      setMessage(error.response?.data?.message || "Không tải được data khám sức khỏe."); setDataError("Không tải được data khám sức khỏe.");
     } finally { setLoading(false); }
   };
 
@@ -49,7 +58,7 @@ export default function HealthDataProcessingPage() {
     loadData();
     api.get("/CatalogItems", { params: { category: "hamlet" } })
       .then((response) => setHamlets(Array.isArray(response.data) ? response.data : []))
-      .catch(() => setMessage("Không tải được danh mục ấp."));
+      .catch(() => { setMessage("Không tải được danh mục ấp."); setHamletsError("Không tải được danh mục ấp."); }).finally(() => setHamletsLoading(false));
   }, []);
 
   const loadObjectTypeMismatches = async () => {
@@ -66,6 +75,15 @@ export default function HealthDataProcessingPage() {
     if (activeTab === "object-type") loadObjectTypeMismatches();
   }, [activeTab]);
 
+  useEffect(() => {
+    let active = true;
+    setElderlyLoading(true); setElderlyError("");
+    api.get("/Elderly/review").then(({data}) => { if (active) setElderlyRows(data); })
+      .catch(() => { if (active) setElderlyError("Không tải được danh sách người cao tuổi để tổng hợp."); })
+      .finally(() => { if (active) setElderlyLoading(false); });
+    return () => { active = false; };
+  }, [customers, activeTab]);
+
   const missingAddress = useMemo(
     () => customers.filter((customer) => customerHamletId(customer, hamlets) === null),
     [customers, hamlets]
@@ -78,6 +96,9 @@ export default function HealthDataProcessingPage() {
     () => customers.filter((customer) => !String(customer.code ?? "").trim()),
     [customers]
   );
+  const pendingRows = useMemo(() => collectPendingUpdates(missingAddress, missingCode, elderlyRows, missingBirthDate), [missingAddress, missingCode, elderlyRows, missingBirthDate]);
+  const pendingLoading = loading || elderlyLoading || hamletsLoading;
+  const pendingError = dataError || elderlyError || hamletsError;
   const processingRows = activeTab === "missing-address" ? missingAddress : activeTab === "missing-birth-date" ? missingBirthDate : EMPTY_ROWS;
   const isProcessingTab = activeTab === "missing-address" || activeTab === "missing-birth-date";
   const visibleRows = activeTab === "missing-address" ? missingAddress : activeTab === "missing-birth-date" ? missingBirthDate : activeTab === "missing-code" ? missingCode : customers;
@@ -229,9 +250,11 @@ export default function HealthDataProcessingPage() {
           <li className="nav-item"><button className={`nav-link ${activeTab === "missing-code" ? "active" : ""}`} onClick={() => setActiveTab("missing-code")}>Chưa có căn cước <span className="badge bg-secondary ms-1">{missingCode.length}</span></button></li>
           <li className="nav-item"><button className={`nav-link ${activeTab === "object-type" ? "active" : ""}`} onClick={() => setActiveTab("object-type")}>Kiểm tra đối tượng <span className="badge bg-primary ms-1">{objectTypeRows.length}</span></button></li>
           <li className="nav-item"><button className={`nav-link ${activeTab === "updated-address" ? "active" : ""}`} onClick={() => setActiveTab("updated-address")}>Cập nhật lại địa chỉ</button></li>
+          <li className="nav-item"><button className={`nav-link ${activeTab === "elderly" ? "active" : ""}`} onClick={() => setActiveTab("elderly")}>Xử lí người cao tuổi</button></li>
+          <li className="nav-item"><button className={`nav-link ${activeTab === "pending-updates" ? "active" : ""}`} onClick={() => setActiveTab("pending-updates")}>Danh sách cần cập nhật <span className="badge bg-danger ms-1">{pendingLoading ? "…" : pendingError ? "!" : pendingRows.length}</span></button></li>
         </ul>
 
-        {activeTab === "updated-address" ? <UpdatedAddressTab onUpdated={loadData} /> : <>
+        {activeTab === "pending-updates" ? <PendingHealthUpdatesTab rows={pendingRows} loading={pendingLoading} error={pendingError} /> : activeTab === "elderly" ? <ElderlyProcessingTab onRowsLoaded={setElderlyRows} /> : activeTab === "updated-address" ? <UpdatedAddressTab onUpdated={loadData} /> : <>
 
         {isProcessingTab && <div className="rounded border bg-light p-3 mb-4"><div className="row g-3 align-items-end">
           <div className="col-lg-4"><label className="form-label fw-semibold">Loại khớp</label><select className="form-select" value={matchType} onChange={(event) => setMatchType(event.target.value)} disabled={updatingAll || updatingId !== null}><option value="all">Tự động đối chiếu</option><option value="cccd">Chỉ khớp CCCD</option>{activeTab !== "missing-birth-date" && <option value="name-date">Chỉ khớp Họ tên + Ngày sinh</option>}<option value="name-year">Chỉ khớp Họ tên + Năm sinh</option></select></div>

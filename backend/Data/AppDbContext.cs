@@ -20,6 +20,7 @@ namespace backend.Data
         public DbSet<TnbqHamlet> TnbqHamlets => Set<TnbqHamlet>();
 
         public DbSet<User> Users { get; set; }
+        public DbSet<ElderlyRecord> ElderlyRecords => Set<ElderlyRecord>();
         public DbSet<UpdatedInformationRecord> UpdatedInformationRecords => Set<UpdatedInformationRecord>();
         public DbSet<UserModuleAccess> UserModuleAccesses => Set<UserModuleAccess>();
         public DbSet<TanHoaRecord> TanHoaRecords { get; set; }
