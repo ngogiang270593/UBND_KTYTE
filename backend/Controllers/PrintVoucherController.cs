@@ -89,7 +89,7 @@ namespace backend.Controllers
             if (source is "all" or "commune") subjects.AddRange(await _context.CommuneSubjectRecords.AsNoTracking().Where(x => x.DiaChi != "").Select(x => new AddressLookupRow(x.Cccd, x.HoTen, x.NgaySinh, "", x.DiaChi, "commune", "Đối tượng xã")).ToListAsync());
             if (source is "all" or "inpatient") subjects.AddRange(await _context.TanChauInpatientRecords.AsNoTracking().Where(x => x.DiaChi != "").Select(x => new AddressLookupRow(x.SoCccd, x.HoTen, x.NgaySinh, "", x.DiaChi, "inpatient", "Nội trú Tân Châu")).ToListAsync());
             if (source is "all" or "outpatient") subjects.AddRange(await _context.TanChauOutpatientRecords.AsNoTracking().Where(x => x.DiaChi != "").Select(x => new AddressLookupRow(x.Cccd, x.HoTen, "", x.NamSinh, x.DiaChi, "outpatient", "Ngoại trú Tân Châu")).ToListAsync());
-            if (source is "all" or "nk") subjects.AddRange(await _context.TanHoaNkRecords.AsNoTracking().Where(x => x.DiaChi != "").Select(x => new AddressLookupRow(x.Cccd, x.HoTen, x.NgaySinh, x.NamSinh, x.DiaChi, "nk", "Danh sách NK")).ToListAsync());
+            if (source is "all" or "nk") subjects.AddRange(await _context.TanHoaNkRecords.AsNoTracking().Where(x => x.DiaChi != "").Select(x => new AddressLookupRow(x.Cccd ?? "", x.HoTen ?? "", x.NgaySinh ?? "", x.NamSinh ?? "", x.DiaChi ?? "", "nk", "Danh sách NK")).ToListAsync());
             if (source is "all" or "medical")
             {
                 var medicalRows = await _context.MedicalRecords.AsNoTracking().Where(x => x.Address != "").Select(x => new { x.CitizenId, x.FullName, x.DateOfBirth, x.Address }).ToListAsync();
