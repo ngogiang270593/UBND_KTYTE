@@ -28,6 +28,7 @@ import CommuneSubjectImportPage from "./CommuneSubjectImportPage";
 import CommuneSubjectListPage from "./CommuneSubjectListPage";
 import DashboardHome from "./DashboardHome";
 import HealthDataProcessingPage from "./HealthDataProcessingPage";
+import UpdatedInformationImportPage from "./UpdatedInformationImportPage";
 import ExaminationPlacePage from "./ExaminationPlacePage";
 import HealthStatisticsPage from "./HealthStatisticsPage";
 import HealthObjectStatisticsPage from "./HealthObjectStatisticsPage";
@@ -133,6 +134,7 @@ function App() {
     if (activePage === "changePassword") return <ChangePasswordPage />;
     if (activePage === "catalog") return <CatalogPage />;
     if (activePage === "healthDataProcessing") return <HealthDataProcessingPage />;
+    if (activePage === "updatedInformationImport") return <UpdatedInformationImportPage />;
     return (
       <div className="alert alert-info">
         Chức năng này sẽ làm sau.

@@ -1,4 +1,4 @@
-﻿using backend.Data;
+using backend.Data;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.AspNetCore.Mvc.Filters;
@@ -40,6 +40,7 @@ public class ModuleAuthorizationFilter(AppDbContext db) : IAsyncAuthorizationFil
         {
             "TnbqHouseholds" or "TnbqSurveys" or "TnbqCatalog" => ["tnbq"],
             "CampaignStats" => ["campaign"],
+            "UpdatedInformation" => ["data-processing"],
             "Customers" => read && action.ActionName == "GetAll" ? ["health", "campaign"] : ["health"],
             "CatalogItems" => read ? ["health", "campaign", "data-processing", "people"] : ["health"],
             "ImportData" => read ? ["health", "stats"] : ["health"],

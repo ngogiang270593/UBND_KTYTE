@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import api from "./api";
+import UpdatedAddressTab from "./UpdatedAddressTab";
 import { useNotification } from "./NotificationProvider";
 
 const normalize = (value) => String(value ?? "").trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[đĐ]/g, "d").toLowerCase();
@@ -8,6 +9,7 @@ const belongsToHamlet = (address, name) => String(address ?? "").split(/[,;]/).m
 const customerHamletId = (customer, hamlets) => hamlets.find((hamlet) => belongsToHamlet(customer.address, hamlet.name))?.id ?? null;
 
 const PAGE_SIZE = 20;
+const EMPTY_ROWS = [];
 
 function formatDate(value) {
   if (!value) return "—";
@@ -76,7 +78,7 @@ export default function HealthDataProcessingPage() {
     () => customers.filter((customer) => !String(customer.code ?? "").trim()),
     [customers]
   );
-  const processingRows = activeTab === "missing-address" ? missingAddress : activeTab === "missing-birth-date" ? missingBirthDate : [];
+  const processingRows = activeTab === "missing-address" ? missingAddress : activeTab === "missing-birth-date" ? missingBirthDate : EMPTY_ROWS;
   const isProcessingTab = activeTab === "missing-address" || activeTab === "missing-birth-date";
   const visibleRows = activeTab === "missing-address" ? missingAddress : activeTab === "missing-birth-date" ? missingBirthDate : activeTab === "missing-code" ? missingCode : customers;
   const pageKey = activeTab === "missing-address" ? "address" : activeTab === "missing-birth-date" ? "birth" : activeTab === "missing-code" ? "code" : activeTab === "object-type" ? "objectType" : "all";
@@ -226,7 +228,10 @@ export default function HealthDataProcessingPage() {
           <li className="nav-item"><button className={`nav-link ${activeTab === "missing-birth-date" ? "active" : ""}`} onClick={() => { setActiveTab("missing-birth-date"); if (matchType === "name-date") setMatchType("all"); }}>Chưa có ngày sinh <span className="badge bg-danger ms-1">{missingBirthDate.length}</span></button></li>
           <li className="nav-item"><button className={`nav-link ${activeTab === "missing-code" ? "active" : ""}`} onClick={() => setActiveTab("missing-code")}>Chưa có căn cước <span className="badge bg-secondary ms-1">{missingCode.length}</span></button></li>
           <li className="nav-item"><button className={`nav-link ${activeTab === "object-type" ? "active" : ""}`} onClick={() => setActiveTab("object-type")}>Kiểm tra đối tượng <span className="badge bg-primary ms-1">{objectTypeRows.length}</span></button></li>
+          <li className="nav-item"><button className={`nav-link ${activeTab === "updated-address" ? "active" : ""}`} onClick={() => setActiveTab("updated-address")}>Cập nhật lại địa chỉ</button></li>
         </ul>
+
+        {activeTab === "updated-address" ? <UpdatedAddressTab onUpdated={loadData} /> : <>
 
         {isProcessingTab && <div className="rounded border bg-light p-3 mb-4"><div className="row g-3 align-items-end">
           <div className="col-lg-4"><label className="form-label fw-semibold">Loại khớp</label><select className="form-select" value={matchType} onChange={(event) => setMatchType(event.target.value)} disabled={updatingAll || updatingId !== null}><option value="all">Tự động đối chiếu</option><option value="cccd">Chỉ khớp CCCD</option>{activeTab !== "missing-birth-date" && <option value="name-date">Chỉ khớp Họ tên + Ngày sinh</option>}<option value="name-year">Chỉ khớp Họ tên + Năm sinh</option></select></div>
@@ -251,6 +256,7 @@ export default function HealthDataProcessingPage() {
           {loading && <tr><td colSpan={6} className="text-center text-muted py-5">Đang tải dữ liệu...</td></tr>}
         </tbody></table></div>}
         {totalPages > 1 && <div className="d-flex justify-content-between align-items-center mt-3"><span className="small text-muted">Trang {currentPage}/{totalPages} · {activeRows.length} hồ sơ</span><div className="btn-group"><button className="btn btn-sm btn-outline-secondary" onClick={() => changePage(currentPage - 1)} disabled={currentPage === 1}>Trước</button><button className="btn btn-sm btn-outline-secondary" onClick={() => changePage(currentPage + 1)} disabled={currentPage === totalPages}>Sau</button></div></div>}
+        </>}
       </div>
     </div>
   </div>;

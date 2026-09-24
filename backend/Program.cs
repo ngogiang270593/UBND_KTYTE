@@ -295,6 +295,11 @@ using (var scope = app.Services.CreateScope())
             GioiTinh TEXT NULL, Cccd TEXT NULL, DiaChi TEXT NULL,
             SourceFileName TEXT NULL, ImportedAt TEXT NOT NULL
         );
+        CREATE TABLE IF NOT EXISTS UpdatedInformationRecords (
+            Id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+            Stt TEXT NOT NULL, Cccd TEXT NOT NULL, HoTen TEXT NOT NULL, DiaChi TEXT NOT NULL,
+            ImportedAt TEXT NOT NULL
+        );
         CREATE TABLE IF NOT EXISTS TanHoaNkRecords (
             Id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
             Cccd TEXT NULL, NgaySinh TEXT NULL, NamSinh TEXT NULL,
