@@ -41,6 +41,7 @@ namespace backend.Data
         public DbSet<TanChauInpatientRecord> TanChauInpatientRecords { get; set; }
         public DbSet<TanChauOutpatientRecord> TanChauOutpatientRecords { get; set; }
         public DbSet<CommuneSubjectRecord> CommuneSubjectRecords { get; set; }
+        public DbSet<TtytKvTcRecord> TtytKvTcRecords { get; set; }
 
         public override int SaveChanges(bool acceptAllChangesOnSuccess)
         {
@@ -174,3 +175,5 @@ namespace backend.Data
         }
     }
 }
+
+

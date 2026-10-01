@@ -1,4 +1,4 @@
-using backend.Data;
+﻿using backend.Data;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.AspNetCore.Mvc.Filters;
@@ -30,7 +30,7 @@ public class ModuleAuthorizationFilter(AppDbContext db) : IAsyncAuthorizationFil
         context.HttpContext.Items["AccessProfile"] = profile;
         if (!profile.IsActive)
         {
-            context.Result = new ObjectResult(new { message = "Tài khoản đã bị khóa." }) { StatusCode = 403 };
+            context.Result = new ObjectResult(new { message = "TÃ i khoáº£n Ä‘Ã£ bá»‹ khÃ³a." }) { StatusCode = 403 };
             return;
         }
         if (profile.IsSystemAdmin || (controller == "Auth" && action.ActionName is "Me" or "ChangePassword")) return;
@@ -40,7 +40,7 @@ public class ModuleAuthorizationFilter(AppDbContext db) : IAsyncAuthorizationFil
         {
             "TnbqHouseholds" or "TnbqSurveys" or "TnbqCatalog" => ["tnbq"],
             "CampaignStats" => ["campaign"],
-            "UpdatedInformation" or "Elderly" => ["data-processing"],
+            "UpdatedInformation" or "Elderly" or "TtytKvTc" => ["data-processing"],
             "Customers" => read && action.ActionName == "GetAll" ? ["health", "campaign"] : ["health"],
             "CatalogItems" => read ? ["health", "campaign", "data-processing", "people"] : ["health"],
             "ImportData" => read ? ["health", "stats"] : ["health"],
@@ -61,7 +61,8 @@ public class ModuleAuthorizationFilter(AppDbContext db) : IAsyncAuthorizationFil
             _ => []
         };
         if (!required.Any(profile.Modules.Contains))
-            context.Result = new ObjectResult(new { message = "Bạn không có quyền sử dụng chức năng này." }) { StatusCode = 403 };
+            context.Result = new ObjectResult(new { message = "Báº¡n khÃ´ng cÃ³ quyá»n sá»­ dá»¥ng chá»©c nÄƒng nÃ y." }) { StatusCode = 403 };
     }
 }
+
 

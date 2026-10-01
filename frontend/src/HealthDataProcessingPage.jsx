@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import * as XLSX from "xlsx";
 import api from "./api";
 import PendingHealthUpdatesTab from "./PendingHealthUpdatesTab";
 import { collectPendingUpdates } from "./pendingHealthUpdates";
@@ -14,6 +15,53 @@ const customerHamletId = (customer, hamlets) => hamlets.find((hamlet) => belongs
 const PAGE_SIZE = 20;
 const EMPTY_ROWS = [];
 
+function TtytCompareTab({ rows, customers, page, setPage, loading, onReload }) {
+  const [view, setView] = useState('unmatched');
+  const [search, setSearch] = useState('');
+  const normalizeName = (value) => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[đĐ]/g, 'd').toLowerCase().replace(/\s+/g, ' ').trim();
+  const normalizeCode = (value) => String(value || '').replace(/\s/g, '').trim();
+  const hasCode = (value) => { const code = normalizeCode(value).toLowerCase(); return code !== '' && !['0', '-', '--', 'na', 'n/a', 'null', 'undefined'].includes(code); };
+  const items = useMemo(() => {
+    const byCode = new Map(); const byNameYear = new Map();
+    for (const customer of customers) {
+      if (hasCode(customer.code) && !byCode.has(normalizeCode(customer.code))) byCode.set(normalizeCode(customer.code), customer);
+      const customerYear = String(customer.birthDate || '').slice(0, 4) || String(customer.taxCode || '').match(/\d{4}/)?.[0] || '';
+      const key = `${normalizeName(customer.name)}|${customerYear}`;
+      if (customerYear && !byNameYear.has(key)) byNameYear.set(key, customer);
+    }
+    return rows.map((row) => {
+      const cccd = normalizeCode(row.cccd); const name = normalizeName(row.hoTen); const year = String(row.namSinh || '').match(/\d{4}/)?.[0] || '';
+      const customer = hasCode(cccd) ? byCode.get(cccd) : year ? byNameYear.get(`${name}|${year}`) : undefined;
+      return { row, customer };
+    });
+  }, [rows, customers]);
+  const matched = items.filter((item) => item.customer);
+  const unmatched = items.filter((item) => !item.customer);
+  const normalizeSearch = normalizeName(search);
+  const visible = (view === 'matched' ? matched : view === 'unmatched' ? unmatched : items).filter(({ row, customer }) => !normalizeSearch || normalizeSearch.split(' ').every((term) => [row.hoTen, row.namSinh, row.gioiTinh, row.cccd, row.diaChi, row.ngayVao, customer?.name, customer?.birthDate, customer?.taxCode, customer?.code, customer?.address].some((value) => normalizeName(value).includes(term))));
+  const max = Math.max(1, Math.ceil(visible.length / PAGE_SIZE)); const safePage = Math.min(page, max); const start = (safePage - 1) * PAGE_SIZE;
+  const exportRows = visible.map(({ row, customer }) => ({
+    KetQua: customer ? 'Khớp' : 'Không khớp', 'TTYTKVTC - Họ và tên': row.hoTen, 'TTYTKVTC - Năm sinh': row.namSinh,
+    'TTYTKVTC - Giới tính': row.gioiTinh, 'TTYTKVTC - CCCD': row.cccd, 'TTYTKVTC - Địa chỉ': row.diaChi, 'TTYTKVTC - Ngày vào': row.ngayVao,
+    'Khám sức khỏe - Họ và tên': customer?.name || '', 'Khám sức khỏe - Ngày sinh': customer?.birthDate?.slice(0, 10) || '',
+    'Khám sức khỏe - Năm sinh': customer?.taxCode || '', 'Khám sức khỏe - Căn cước': customer?.code || '', 'Khám sức khỏe - Địa chỉ': customer?.address || '',
+  }));
+  const chooseView = (next) => { setView(next); setPage(1); };
+  return <div>
+    <div className="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+      <div className="small text-muted">Đối chiếu CCCD với Căn cước; nếu TTYTKVTC không có CCCD thì dùng Họ tên + Năm sinh.</div>
+      <div className="d-flex gap-2"><button className="btn btn-outline-primary btn-sm" disabled={loading} onClick={onReload}>{loading ? 'Đang tải...' : 'Tải lại danh sách'}</button><button className="btn btn-success btn-sm" disabled={!visible.length} onClick={() => { const sheet = XLSX.utils.json_to_sheet(exportRows); const book = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(book, sheet, 'Đối chiếu'); XLSX.writeFile(book, 'DoiChieu_TTYTKVTC.xlsx'); }}>Xuất Excel</button></div>
+    </div>
+    <div className="row g-2 align-items-center mb-3"><div className="col-md-6"><input className="form-control" value={search} onChange={(event) => { setSearch(event.target.value); setPage(1); }} placeholder="Tìm tên, năm sinh, CCCD, địa chỉ..." /></div><div className="col-md-6 text-md-end small text-muted">{visible.length.toLocaleString('vi-VN')} / {items.length.toLocaleString('vi-VN')} dòng</div></div>
+    <ul className="nav nav-pills mb-3"><li className="nav-item"><button className={`nav-link ${view === 'unmatched' ? 'active' : ''}`} onClick={() => chooseView('unmatched')}>Không khớp <span className="badge bg-light text-dark ms-1">{unmatched.length}</span></button></li><li className="nav-item"><button className={`nav-link ${view === 'matched' ? 'active' : ''}`} onClick={() => chooseView('matched')}>Khớp <span className="badge bg-light text-dark ms-1">{matched.length}</span></button></li><li className="nav-item"><button className={`nav-link ${view === 'all' ? 'active' : ''}`} onClick={() => chooseView('all')}>Tất cả <span className="badge bg-light text-dark ms-1">{items.length}</span></button></li></ul>
+    <div className="table-responsive"><table className="table table-bordered table-hover align-middle"><thead className="table-light"><tr><th rowSpan="2">STT</th><th colSpan="6" className="text-center text-primary">Thông tin khám bên TTYTKV</th><th colSpan="5" className="text-center text-success">Thông tin khám sức khỏe</th><th rowSpan="2">Kết quả</th></tr><tr><th>Họ và tên</th><th>Năm sinh</th><th>Giới tính</th><th>CCCD</th><th>Địa chỉ</th><th>Ngày vào</th><th>Họ và tên</th><th>Ngày sinh</th><th>Năm sinh</th><th>Căn cước</th><th>Địa chỉ</th></tr></thead><tbody>
+      {visible.slice(start, start + PAGE_SIZE).map(({ row, customer }, index) => <tr key={row.id || start + index} className={customer ? '' : 'table-warning'}><td>{start + index + 1}</td><td>{row.hoTen}</td><td>{row.namSinh}</td><td>{row.gioiTinh}</td><td>{row.cccd}</td><td>{row.diaChi}</td><td>{row.ngayVao}</td><td>{customer?.name || '—'}</td><td>{customer?.birthDate?.slice(0, 10) || '—'}</td><td>{customer?.taxCode || '—'}</td><td>{customer?.code || '—'}</td><td>{customer?.address || '—'}</td><td>{customer ? 'Khớp' : 'Không khớp'}</td></tr>)}
+      {!visible.length && <tr><td colSpan={13} className="text-center text-muted py-4">{loading ? 'Đang tải danh sách...' : 'Không có dòng phù hợp.'}</td></tr>}
+    </tbody></table></div>
+    <div className="d-flex justify-content-between align-items-center"><span className="small text-muted">Trang {safePage}/{max}</span><div><button className="btn btn-sm btn-outline-secondary me-2" disabled={safePage <= 1} onClick={() => setPage(safePage - 1)}>Trước</button><button className="btn btn-sm btn-outline-secondary" disabled={safePage >= max} onClick={() => setPage(safePage + 1)}>Sau</button></div></div>
+  </div>;
+}
+
 function formatDate(value) {
   if (!value) return "—";
   const parts = String(value).slice(0, 10).split("-");
@@ -25,6 +73,9 @@ export default function HealthDataProcessingPage() {
   const [customers, setCustomers] = useState([]);
   const [hamlets, setHamlets] = useState([]);
   const [elderlyRows, setElderlyRows] = useState([]);
+  const [ttytRows, setTtytRows] = useState([]);
+  const [ttytLoading, setTtytLoading] = useState(false);
+  const [ttytPage, setTtytPage] = useState(1);
   const [elderlyLoading, setElderlyLoading] = useState(true);
   const [elderlyError, setElderlyError] = useState("");
   const [hamletsLoading, setHamletsLoading] = useState(true);
@@ -44,6 +95,8 @@ export default function HealthDataProcessingPage() {
   const [loadingObjectTypes, setLoadingObjectTypes] = useState(false);
   const [pages, setPages] = useState({ all: 1, address: 1, birth: 1, code: 1, objectType: 1 });
 
+  const loadTtytRows = async () => { setTtytLoading(true); try { const { data } = await api.get("/TtytKvTc"); setTtytRows(Array.isArray(data) ? data : []); } catch { setTtytRows([]); } finally { setTtytLoading(false); } };
+
   const loadData = async () => {
     setLoading(true); setDataError("");
     try {
@@ -56,6 +109,7 @@ export default function HealthDataProcessingPage() {
 
   useEffect(() => {
     loadData();
+    loadTtytRows();
     api.get("/CatalogItems", { params: { category: "hamlet" } })
       .then((response) => setHamlets(Array.isArray(response.data) ? response.data : []))
       .catch(() => { setMessage("Không tải được danh mục ấp."); setHamletsError("Không tải được danh mục ấp."); }).finally(() => setHamletsLoading(false));
@@ -251,10 +305,11 @@ export default function HealthDataProcessingPage() {
           <li className="nav-item"><button className={`nav-link ${activeTab === "object-type" ? "active" : ""}`} onClick={() => setActiveTab("object-type")}>Kiểm tra đối tượng <span className="badge bg-primary ms-1">{objectTypeRows.length}</span></button></li>
           <li className="nav-item"><button className={`nav-link ${activeTab === "updated-address" ? "active" : ""}`} onClick={() => setActiveTab("updated-address")}>Cập nhật lại địa chỉ</button></li>
           <li className="nav-item"><button className={`nav-link ${activeTab === "elderly" ? "active" : ""}`} onClick={() => setActiveTab("elderly")}>Xử lí người cao tuổi</button></li>
+          <li className="nav-item"><button className={`nav-link ${activeTab === "ttyt-kvtc" ? "active" : ""}`} onClick={()=>setActiveTab("ttyt-kvtc")}>Đối chiếu TTYTKVTC</button></li>
           <li className="nav-item"><button className={`nav-link ${activeTab === "pending-updates" ? "active" : ""}`} onClick={() => setActiveTab("pending-updates")}>Danh sách cần cập nhật <span className="badge bg-danger ms-1">{pendingLoading ? "…" : pendingError ? "!" : pendingRows.length}</span></button></li>
         </ul>
 
-        {activeTab === "pending-updates" ? <PendingHealthUpdatesTab rows={pendingRows} loading={pendingLoading} error={pendingError} /> : activeTab === "elderly" ? <ElderlyProcessingTab onRowsLoaded={setElderlyRows} /> : activeTab === "updated-address" ? <UpdatedAddressTab onUpdated={loadData} /> : <>
+        {activeTab === "ttyt-kvtc" ? <TtytCompareTab rows={ttytRows} customers={customers} page={ttytPage} setPage={setTtytPage} loading={ttytLoading} onReload={loadTtytRows} /> : activeTab === "pending-updates" ? <PendingHealthUpdatesTab rows={pendingRows} loading={pendingLoading} error={pendingError} /> : activeTab === "elderly" ? <ElderlyProcessingTab onRowsLoaded={setElderlyRows} /> : activeTab === "updated-address" ? <UpdatedAddressTab onUpdated={loadData} /> : <>
 
         {isProcessingTab && <div className="rounded border bg-light p-3 mb-4"><div className="row g-3 align-items-end">
           <div className="col-lg-4"><label className="form-label fw-semibold">Loại khớp</label><select className="form-select" value={matchType} onChange={(event) => setMatchType(event.target.value)} disabled={updatingAll || updatingId !== null}><option value="all">Tự động đối chiếu</option><option value="cccd">Chỉ khớp CCCD</option>{activeTab !== "missing-birth-date" && <option value="name-date">Chỉ khớp Họ tên + Ngày sinh</option>}<option value="name-year">Chỉ khớp Họ tên + Năm sinh</option></select></div>

@@ -1,4 +1,4 @@
-import TanHoaAdmissionTcListPage from "./TanHoaAdmissionTcListPage";
+﻿import TanHoaAdmissionTcListPage from "./TanHoaAdmissionTcListPage";
 import TanHoaAdmissionTcImportPage from "./TanHoaAdmissionTcImportPage";
 import TanHoaPaidKskListPage from "./TanHoaPaidKskListPage";
 import TanHoaPaidKskImportPage from "./TanHoaPaidKskImportPage";
@@ -29,6 +29,7 @@ import CommuneSubjectListPage from "./CommuneSubjectListPage";
 import DashboardHome from "./DashboardHome";
 import HealthDataProcessingPage from "./HealthDataProcessingPage";
 import ElderlyImportPage from "./ElderlyImportPage";
+import TtytKvTcImportPage from "./TtytKvTcImportPage";
 import UpdatedInformationImportPage from "./UpdatedInformationImportPage";
 import ExaminationPlacePage from "./ExaminationPlacePage";
 import HealthStatisticsPage from "./HealthStatisticsPage";
@@ -59,7 +60,7 @@ function App() {
     }).catch((error) => {
       if (cancelled) return;
       setAccess(null);
-      setAccessError({ token, message: error.response?.data?.message || "Không thể kiểm tra quyền truy cập. Vui lòng thử lại." });
+      setAccessError({ token, message: error.response?.data?.message || "KhÃ´ng thá»ƒ kiá»ƒm tra quyá»n truy cáº­p. Vui lÃ²ng thá»­ láº¡i." });
       if (error.response?.status === 401) {
         localStorage.removeItem("token");
         setToken(null);
@@ -73,7 +74,7 @@ function App() {
 
   const logout = () => {
     sessionStorage.clear();
-    localStorage.clear(); // xóa token cũ còn sót
+    localStorage.clear(); // xÃ³a token cÅ© cÃ²n sÃ³t
     setToken(null);
     setAccess(null);
     setAccessError(null);
@@ -87,10 +88,10 @@ function App() {
 
   if (accessError?.token === token) return <div className="p-4">
     <div className="alert alert-danger" role="alert">{accessError.message}</div>
-    <button className="btn btn-primary me-2" onClick={() => { setAccessError(null); setAccessRetry((value) => value + 1); }}>Thử lại</button>
-    <button className="btn btn-outline-secondary" onClick={logout}>Đăng xuất</button>
+    <button className="btn btn-primary me-2" onClick={() => { setAccessError(null); setAccessRetry((value) => value + 1); }}>Thá»­ láº¡i</button>
+    <button className="btn btn-outline-secondary" onClick={logout}>ÄÄƒng xuáº¥t</button>
   </div>;
-  if (access?.token !== token) return <p className="p-4" role="status">Đang kiểm tra quyền truy cập...</p>;
+  if (access?.token !== token) return <p className="p-4" role="status">Äang kiá»ƒm tra quyá»n truy cáº­p...</p>;
   const profile = access.profile;
   const modules = appModules.filter((module) => profile.isSystemAdmin || profile.modules.includes(module.id));
   const pageModule = findModuleByPage(activePage);
@@ -99,7 +100,7 @@ function App() {
     || (pageModule && modules.some((module) => module.id === pageModule.id));
 
   const renderPage = () => {
-    if (!canOpenPage) return <div className="alert alert-warning">Bạn không còn quyền truy cập chức năng này. Hãy chọn module khác trên Dashboard.</div>;
+    if (!canOpenPage) return <div className="alert alert-warning">Báº¡n khÃ´ng cÃ²n quyá»n truy cáº­p chá»©c nÄƒng nÃ y. HÃ£y chá»n module khÃ¡c trÃªn Dashboard.</div>;
     if (activePage === "users") return <UserManagementPage />;
     if (activePage === "tnbqSurvey") return <TnbqSurveyPage />;
     if (activePage === "tnbqSurveyStatistics") return <TnbqSurveyStatisticsPage />;
@@ -136,10 +137,11 @@ function App() {
     if (activePage === "catalog") return <CatalogPage />;
     if (activePage === "healthDataProcessing") return <HealthDataProcessingPage />;
     if (activePage === "elderlyImport") return <ElderlyImportPage />;
+    if (activePage === "ttytKvTcImport") return <TtytKvTcImportPage />;
     if (activePage === "updatedInformationImport") return <UpdatedInformationImportPage />;
     return (
       <div className="alert alert-info">
-        Chức năng này sẽ làm sau.
+        Chá»©c nÄƒng nÃ y sáº½ lÃ m sau.
       </div>
     );
   };
@@ -160,3 +162,4 @@ function App() {
 }
 
 export default App;
+

@@ -24,6 +24,7 @@ export const appModules = [
   ]},
   { id: "data-processing", title: "Xử lý data", icon: "🧹", links: [
     { key: "elderlyImport", label: "Import Người Cao Tuổi", icon: "📥" },
+    { key: "ttytKvTcImport", label: "Import tổng khám TTYTKVTC", icon: "📥" },
     { key: "updatedInformationImport", label: "Import thông tin cập nhật", icon: "📥" },
     { key: "healthDataProcessing", label: "Data khám sức khỏe", icon: "🩺" },
   ]},

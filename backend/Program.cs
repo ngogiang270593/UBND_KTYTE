@@ -1,4 +1,4 @@
-using backend.Data;
+﻿using backend.Data;
 using backend.Security;
 using Microsoft.Data.Sqlite;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -9,8 +9,8 @@ using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Electron chạy backend dưới tài khoản người dùng thông thường. Không ghi vào
-// Windows Event Log vì provider này có thể bị từ chối quyền và làm chậm startup.
+// Electron cháº¡y backend dÆ°á»›i tÃ i khoáº£n ngÆ°á»i dÃ¹ng thÃ´ng thÆ°á»ng. KhÃ´ng ghi vÃ o
+// Windows Event Log vÃ¬ provider nÃ y cÃ³ thá»ƒ bá»‹ tá»« chá»‘i quyá»n vÃ  lÃ m cháº­m startup.
 builder.Logging.ClearProviders();
 builder.Logging.AddConsole();
 
@@ -320,6 +320,12 @@ using (var scope = app.Services.CreateScope())
             HoTen TEXT NULL, DiaChi TEXT NULL, SoTheBhyt TEXT NULL,
             SourceFileName TEXT NULL, ImportedAt TEXT NOT NULL
         );
+        CREATE TABLE IF NOT EXISTS TtytKvTcRecords (
+            Id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+            Stt TEXT NOT NULL, HoTen TEXT NOT NULL, NamSinh TEXT NOT NULL,
+            GioiTinh TEXT NOT NULL, Cccd TEXT NOT NULL, DiaChi TEXT NOT NULL,
+            NgayVao TEXT NOT NULL, SourceFileName TEXT NOT NULL, ImportedAt TEXT NOT NULL
+        );
         CREATE TABLE IF NOT EXISTS ExaminationNumbers (
             CustomerId INTEGER NOT NULL PRIMARY KEY,
             ExaminationDate TEXT NOT NULL,
@@ -478,7 +484,7 @@ using (var scope = app.Services.CreateScope())
         SourceFileName TEXT NOT NULL,
         ImportedAt TEXT NOT NULL
     );");
-    // PID của dữ liệu y bạ được phép trùng theo yêu cầu import nguyên trạng.
+    // PID cá»§a dá»¯ liá»‡u y báº¡ Ä‘Æ°á»£c phÃ©p trÃ¹ng theo yÃªu cáº§u import nguyÃªn tráº¡ng.
     db.Database.ExecuteSqlRaw("DROP INDEX IF EXISTS IX_MedicalRecords_PatientId;");
     db.Database.ExecuteSqlRaw("CREATE INDEX IF NOT EXISTS IX_MedicalRecords_PatientId ON MedicalRecords (PatientId);");
     db.Database.ExecuteSqlRaw(@"CREATE TABLE IF NOT EXISTS TanChauInpatientRecords (
@@ -541,9 +547,9 @@ using (var scope = app.Services.CreateScope())
 
     var catalogDefaults = new Dictionary<string, string[]>
     {
-        ["objectType"] = new[] { "CÔNG CHỨC", "DÂN QUÂN", "GIÁO VIÊN", "NGƯỜI CAO TUỔI", "DƯỚI 18", "NGƯỜI DÂN", "THƯƠNG BINH", "KHUYẾT TẬT" },
-        ["occupation"] = new[] { "NÔNG DÂN", "CÔNG NHÂN", "BUÔN BÁN", "KINH DOANH", "CÁN BỘ, CÔNG CHỨC", "VIÊN CHỨC", "GIÁO VIÊN", "LAO ĐỘNG TỰ DO", "NỘI TRỢ", "HỌC SINH, SINH VIÊN" },
-        ["examinationPlace"] = new[] { "TRẠM Y TẾ XÃ", "TRUNG TÂM Y TẾ HUYỆN", "BỆNH VIỆN ĐA KHOA", "TỰ NGUYỆN", "NƠI KHÁC" }
+        ["objectType"] = new[] { "CÃ”NG CHá»¨C", "DÃ‚N QUÃ‚N", "GIÃO VIÃŠN", "NGÆ¯á»œI CAO TUá»”I", "DÆ¯á»šI 18", "NGÆ¯á»œI DÃ‚N", "THÆ¯Æ NG BINH", "KHUYáº¾T Táº¬T" },
+        ["occupation"] = new[] { "NÃ”NG DÃ‚N", "CÃ”NG NHÃ‚N", "BUÃ”N BÃN", "KINH DOANH", "CÃN Bá»˜, CÃ”NG CHá»¨C", "VIÃŠN CHá»¨C", "GIÃO VIÃŠN", "LAO Äá»˜NG Tá»° DO", "Ná»˜I TRá»¢", "Há»ŒC SINH, SINH VIÃŠN" },
+        ["examinationPlace"] = new[] { "TRáº M Y Táº¾ XÃƒ", "TRUNG TÃ‚M Y Táº¾ HUYá»†N", "Bá»†NH VIá»†N ÄA KHOA", "Tá»° NGUYá»†N", "NÆ I KHÃC" }
     };
 
     foreach (var (category, names) in catalogDefaults)
@@ -561,7 +567,7 @@ using (var scope = app.Services.CreateScope())
         {
             Username = "admin",
             Password = BCrypt.Net.BCrypt.HashPassword("123456"),
-            FullName = "Quản trị viên",
+            FullName = "Quáº£n trá»‹ viÃªn",
             Role = "Admin"
         });
         db.SaveChanges();
@@ -581,7 +587,7 @@ using (var scope = app.Services.CreateScope())
         {
             Username = "quantrihethong",
             Password = BCrypt.Net.BCrypt.HashPassword("123456"),
-            FullName = "Quản trị hệ thống",
+            FullName = "Quáº£n trá»‹ há»‡ thá»‘ng",
             Role = ModuleAccess.SystemAdminRole
         });
         db.SaveChanges();
@@ -599,3 +605,5 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
+
+
