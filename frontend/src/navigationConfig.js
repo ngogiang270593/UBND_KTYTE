@@ -16,6 +16,7 @@ export const appModules = [
     { key: "healthStatistics", label: "Thống kê", icon: "📊" },
     { key: "healthObjectStatistics", label: "TK Đối tượng", icon: "👥" },
     { key: "examinationPlace", label: "TK Nơi khám", icon: "🏥" },
+    { key: "nationwideHealthStatistics", label: "SỐ LIỆU KHÁM SỨC KHỎE TOÀN DÂN", icon: "🩺" },
     { key: "catalog", label: "Danh mục", icon: "📚" },
   ]},
   { id: "campaign", title: "Chiến dịch", icon: "📊", links: [

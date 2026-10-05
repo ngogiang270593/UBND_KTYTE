@@ -3,34 +3,10 @@ import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import api from "./api";
 import TablePagination from "./TablePagination";
+import { findCustomerHamlet } from "./hamletMatching";
 
 const emptyForm = { code: "", name: "", fromDate: null, toDate: null, address: "", objectType: "", occupation: "" };
-const normalize = (value) => String(value ?? "").trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[đĐ]/g, "d").toLowerCase();
-const normalizeHamlet = (value) => normalize(value).replace(/\([^)]*\)/g, " ").replace(/^[\s.:;-]*ap\s+/, "").replace(/[\s.:;-]+$/g, "").replace(/\s+/g, " ").trim();
-const addressParts = (address) => String(address ?? "").split(/[,;]/).map(normalizeHamlet).filter(Boolean);
-const customerHamletId = (customer, hamlets) => {
-  const parts = addressParts(customer.address);
-  const normalizedHamlets = hamlets
-    .map((hamlet) => ({ ...hamlet, normalizedName: normalizeHamlet(hamlet.name) }))
-    .filter((hamlet) => hamlet.normalizedName);
-
-  const exactMatch = normalizedHamlets.find((hamlet) =>
-    parts.some((part) => part === hamlet.normalizedName)
-  );
-
-  if (exactMatch) return exactMatch.id;
-
-  return normalizedHamlets
-    .filter((hamlet) =>
-      parts.some(
-        (part) =>
-          part.startsWith(`${hamlet.normalizedName} `) ||
-          part.endsWith(` ${hamlet.normalizedName}`)
-      )
-    )
-    .sort((first, second) => second.normalizedName.length - first.normalizedName.length)[0]
-    ?.id ?? null;
-};
+const customerHamletId = (customer, hamlets) => findCustomerHamlet(customer, hamlets)?.id ?? null;
 const apiDate = (date) => date ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}` : null;
 const displayDate = (value) => { const parts = String(value || "").slice(0, 10).split("-"); return parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : "—"; };
 

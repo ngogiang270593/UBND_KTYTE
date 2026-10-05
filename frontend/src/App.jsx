@@ -41,6 +41,7 @@ import TnbqCatalogPage from "./TnbqCatalogPage";
 import UserManagementPage from "./UserManagementPage";
 import OfficeMeetingsPage from "./OfficeMeetingsPage";
 import OfficeMeetingCatalogPage from "./OfficeMeetingCatalogPage";
+import NationwideHealthStatisticsPage from "./NationwideHealthStatisticsPage";
 import { appModules, findModuleByPage } from "./navigationConfig";
 import api from "./api";
 function App() {
@@ -133,6 +134,7 @@ function App() {
     if (activePage === "tanChauOutpatientImport") return <TanChauOutpatientImportPage />;
     if (activePage === "tanChauOutpatientList") return <TanChauOutpatientListPage />;
     if (activePage === "consolidatedList") return <ConsolidatedListPage />;
+    if (activePage === "nationwideHealthStatistics") return <NationwideHealthStatisticsPage />;
     if (activePage === "printTemplates") return <PrintTemplatePage />;
     if (activePage === "printVoucher") return <PrintVoucherPage />;
     if (activePage === "examinationPlace") return <ExaminationPlacePage key={selectedExaminationPlace === null ? "total" : `place:${selectedExaminationPlace}`} initialPlace={selectedExaminationPlace} />;
