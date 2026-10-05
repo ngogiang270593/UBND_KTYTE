@@ -257,6 +257,19 @@ using (var scope = app.Services.CreateScope())
         );
         """);
     db.Database.ExecuteSqlRaw("""
+        CREATE TABLE IF NOT EXISTS OfficeMeetings (
+            Id INTEGER NOT NULL CONSTRAINT PK_OfficeMeetings PRIMARY KEY AUTOINCREMENT,
+            Number TEXT NOT NULL,
+            MeetingDate TEXT NOT NULL,
+            Content TEXT NOT NULL,
+            AttendeeCount INTEGER NOT NULL,
+            AttachmentName TEXT NULL,
+            AttachmentPath TEXT NULL,
+            CreatedAt TEXT NOT NULL
+        );
+        CREATE INDEX IF NOT EXISTS IX_OfficeMeetings_MeetingDate ON OfficeMeetings (MeetingDate);
+        """);
+    db.Database.ExecuteSqlRaw("""
         CREATE TABLE IF NOT EXISTS TnbqHouseholds (
             Id INTEGER NOT NULL CONSTRAINT PK_TnbqHouseholds PRIMARY KEY AUTOINCREMENT,
             Year INTEGER NOT NULL, HouseNumber TEXT NOT NULL, HouseholdNumber TEXT NOT NULL,
@@ -605,5 +618,4 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
-
 

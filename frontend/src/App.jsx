@@ -39,6 +39,8 @@ import TnbqSurveyPage from "./TnbqSurveyPage";
 import TnbqSurveyStatisticsPage from "./TnbqSurveyStatisticsPage";
 import TnbqCatalogPage from "./TnbqCatalogPage";
 import UserManagementPage from "./UserManagementPage";
+import OfficeMeetingsPage from "./OfficeMeetingsPage";
+import OfficeMeetingCatalogPage from "./OfficeMeetingCatalogPage";
 import { appModules, findModuleByPage } from "./navigationConfig";
 import api from "./api";
 function App() {
@@ -114,10 +116,12 @@ function App() {
     if (activePage === "tanHoaNkList") return <TanHoaNkListPage />;
     if (activePage === "tanHoaInpatientList") return <TanHoaInpatientListPage />;
     if (activePage === "tanHoaImport") return <TanHoaImportPage />;
-    if (activePage === "dashboard") return <DashboardHome modules={modules} selectedModule={selectedModule} onSelectModule={(moduleId) => { setSelectedModule(moduleId); setActivePage(moduleId === "health" ? "customers" : moduleId === "tnbq" ? "tnbqList" : moduleId === "system" ? "users" : "dashboard"); }} />;
+    if (activePage === "dashboard") return <DashboardHome modules={modules} selectedModule={selectedModule} onSelectModule={(moduleId) => { setSelectedModule(moduleId); setActivePage(moduleId === "health" ? "customers" : moduleId === "tnbq" ? "tnbqList" : moduleId === "system" ? "users" : moduleId === "office" ? "officeMeetings" : "dashboard"); }} />;
     if (activePage === "campaignOverview") return <CampaignDashboard />;
     if (activePage === "campaignData") return <CampaignDataPage />;
     if (activePage === "healthObjectStatistics") return <HealthObjectStatisticsPage key={selectedObjectType ?? "total"} initialObjectType={selectedObjectType} />;
+    if (activePage === "officeMeetings") return <OfficeMeetingsPage profile={profile} />;
+    if (activePage === "officeMeetingCatalog") return <OfficeMeetingCatalogPage />;
     if (activePage === "customers") return <CustomerPage />;
     if (activePage === "importData") return <ImportDataPage />;
     if (activePage === "communeSubjectImport") return <CommuneSubjectImportPage />;
@@ -162,4 +166,3 @@ function App() {
 }
 
 export default App;
-

@@ -1,0 +1,98 @@
+@baseUrl = http://localhost:5022
+@token = replace-with-access-token
+
+### List online meetings
+GET {{baseUrl}}/api/OfficeMeetings
+Authorization: Bearer {{token}}
+
+### Get a meeting
+GET {{baseUrl}}/api/OfficeMeetings/1
+Authorization: Bearer {{token}}
+
+### Download a meeting attachment
+GET {{baseUrl}}/api/OfficeMeetings/1/attachment
+Authorization: Bearer {{token}}
+
+### List meeting year catalog
+GET {{baseUrl}}/api/OfficeMeetingYears
+Authorization: Bearer {{token}}
+
+### Add a year to the meeting year catalog
+POST {{baseUrl}}/api/OfficeMeetingYears
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "2027"
+}
+
+### Update a year in the meeting year catalog
+PUT {{baseUrl}}/api/OfficeMeetingYears/1
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "2028"
+}
+
+### Delete a year from the meeting year catalog
+DELETE {{baseUrl}}/api/OfficeMeetingYears/1
+Authorization: Bearer {{token}}
+
+### Delete a meeting
+DELETE {{baseUrl}}/api/OfficeMeetings/1
+Authorization: Bearer {{token}}
+
+### Delete all meetings
+DELETE {{baseUrl}}/api/OfficeMeetings/all
+Authorization: Bearer {{token}}
+
+### Register a meeting
+POST {{baseUrl}}/api/OfficeMeetings
+Authorization: Bearer {{token}}
+Content-Type: multipart/form-data; boundary=MeetingFormBoundary
+
+--MeetingFormBoundary
+Content-Disposition: form-data; name="Number"
+
+01/2026
+--MeetingFormBoundary
+Content-Disposition: form-data; name="MeetingDate"
+
+05/10/2026
+--MeetingFormBoundary
+Content-Disposition: form-data; name="Content"
+
+Họp giao ban trực tuyến
+--MeetingFormBoundary
+Content-Disposition: form-data; name="AttendeeCount"
+
+12
+--MeetingFormBoundary--
+
+### Update a meeting (digits-only date ddMMyyyy; attachment is optional)
+PUT {{baseUrl}}/api/OfficeMeetings/1
+Authorization: Bearer {{token}}
+Content-Type: multipart/form-data; boundary=UpdateMeetingFormBoundary
+
+--UpdateMeetingFormBoundary
+Content-Disposition: form-data; name="Number"
+
+01/2026
+--UpdateMeetingFormBoundary
+Content-Disposition: form-data; name="MeetingDate"
+
+01012026
+--UpdateMeetingFormBoundary
+Content-Disposition: form-data; name="Content"
+
+Họp giao ban trực tuyến đã cập nhật
+--UpdateMeetingFormBoundary
+Content-Disposition: form-data; name="AttendeeCount"
+
+15
+--UpdateMeetingFormBoundary
+Content-Disposition: form-data; name="RemoveAttachment"
+
+false
+--UpdateMeetingFormBoundary--

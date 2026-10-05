@@ -57,6 +57,8 @@ public class ModuleAuthorizationFilter(AppDbContext db) : IAsyncAuthorizationFil
             "MedicalRecords" => read ? ["record", "stats"] : ["record"],
             "CommuneSubjects" => ["people"],
             "TanHoa" or "TanHoaNk" or "TanHoaPaidKsk" or "TanHoaAdmissionTc" => read ? ["tan-hoa", "stats"] : ["tan-hoa"],
+            "OfficeMeetings" => ["office"],
+            "OfficeMeetingYears" => ["office"],
             // User administration, legacy setup and unmapped endpoints are system-admin only.
             _ => []
         };
@@ -64,5 +66,3 @@ public class ModuleAuthorizationFilter(AppDbContext db) : IAsyncAuthorizationFil
             context.Result = new ObjectResult(new { message = "Bạn không có quyền sử dụng chức năng này." }) { StatusCode = 403 };
     }
 }
-
-

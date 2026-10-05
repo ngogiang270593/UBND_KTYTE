@@ -9,7 +9,7 @@ public static class ModuleAccess
 {
     public const string SystemAdminRole = "SystemAdmin";
     public static readonly string[] ModuleIds =
-        ["tnbq", "health", "campaign", "data-processing", "stats", "hospital", "record", "people", "tan-hoa"];
+        ["tnbq", "health", "campaign", "data-processing", "stats", "hospital", "record", "people", "tan-hoa", "office"];
 
     public static async Task<AccessProfile> GetProfile(AppDbContext db, User user)
     {

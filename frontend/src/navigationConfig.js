@@ -31,6 +31,10 @@ export const appModules = [
   { id: "stats", title: "Thống kê", icon: "📉", links: [
     { key: "consolidatedList", label: "Tổng hợp danh sách", icon: "📊" },
   ]},
+  { id: "office", title: "Văn phòng", icon: "🏢", links: [
+    { key: "officeMeetings", label: "Họp Trực tuyến", icon: "💻" },
+    { key: "officeMeetingCatalog", label: "Danh mục", icon: "📚" },
+  ]},
   { id: "hospital", title: "Tân Châu", icon: "🏥", links: [
     { key: "tanChauInpatientImport", label: "Import nội trú", icon: "📥" },
     { key: "tanChauInpatientList", label: "Danh sách nội trú", icon: "📋" },

@@ -23,6 +23,7 @@ namespace backend.Data
         public DbSet<ElderlyRecord> ElderlyRecords => Set<ElderlyRecord>();
         public DbSet<UpdatedInformationRecord> UpdatedInformationRecords => Set<UpdatedInformationRecord>();
         public DbSet<UserModuleAccess> UserModuleAccesses => Set<UserModuleAccess>();
+        public DbSet<OfficeMeeting> OfficeMeetings => Set<OfficeMeeting>();
         public DbSet<TanHoaRecord> TanHoaRecords { get; set; }
         public DbSet<TanHoaNkRecord> TanHoaNkRecords { get; set; }
         public DbSet<TanHoaPaidKskRecord> TanHoaPaidKskRecords { get; set; }
@@ -175,5 +176,4 @@ namespace backend.Data
         }
     }
 }
-
 
