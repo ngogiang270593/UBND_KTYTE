@@ -141,6 +141,12 @@ export default function OfficeMeetingsPage({ profile }) {
       }
     );
   }, [appliedFilters, meetings]);
+  const sortedFilteredMeetings = useMemo(() => [...filteredMeetings].sort((first, second) =>
+    String(second.meetingDate).localeCompare(String(first.meetingDate)) || second.id - first.id
+  ), [filteredMeetings]);
+  const totalFilteredAttendees = useMemo(() => filteredMeetings.reduce(
+    (total, meeting) => total + Number(meeting.attendeeCount || 0), 0
+  ), [filteredMeetings]);
   const availableYears = useMemo(() => [...new Set([
     ...yearCatalog.map((item) => Number(item.name)),
     currentYear,
@@ -148,7 +154,7 @@ export default function OfficeMeetingsPage({ profile }) {
 
   const pageCount = Math.max(1, Math.ceil(filteredMeetings.length / pageSize));
   const currentPage = Math.min(page, pageCount);
-  const visibleMeetings = filteredMeetings.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  const visibleMeetings = sortedFilteredMeetings.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   const selectAttachment = (file) => {
     if (!file) return;
@@ -348,7 +354,7 @@ export default function OfficeMeetingsPage({ profile }) {
   };
 
   const exportExcel = () => {
-    if (!filteredMeetings.length) return;
+    if (!sortedFilteredMeetings.length) return;
     setExporting(true);
     try {
       const exportedAt = new Date().toLocaleString("vi-VN");
@@ -359,7 +365,9 @@ export default function OfficeMeetingsPage({ profile }) {
           [`Xuất lúc: ${exportedAt} · ${sheetMeetings.length.toLocaleString("vi-VN")} cuộc họp · ${totalAttendees.toLocaleString("vi-VN")} người tham dự`],
           [],
           ["Số", "Ngày nhập", "Nội dung", "Số người họp"],
-          ...sheetMeetings.map((meeting) => [
+          ...[...sheetMeetings].sort((first, second) =>
+            String(second.meetingDate).localeCompare(String(first.meetingDate)) || second.id - first.id
+          ).map((meeting) => [
             meeting.number,
             formatDate(meeting.meetingDate),
             meeting.content,
@@ -413,7 +421,7 @@ export default function OfficeMeetingsPage({ profile }) {
       const workbook = XLSX.utils.book_new();
       if (appliedFilters.year && !appliedFilters.quarter) {
         for (let quarter = 1; quarter <= 4; quarter += 1) {
-          const quarterMeetings = filteredMeetings.filter((meeting) => {
+          const quarterMeetings = sortedFilteredMeetings.filter((meeting) => {
             const month = Number(String(meeting.meetingDate ?? "").slice(5, 7));
             return Math.ceil(month / 3) === quarter;
           });
@@ -424,7 +432,7 @@ export default function OfficeMeetingsPage({ profile }) {
         const sheetTitle = appliedFilters.quarter
           ? `DANH SÁCH HỌP TRỰC TUYẾN - QUÝ ${appliedFilters.quarter}${appliedFilters.year ? `/${appliedFilters.year}` : ""}`
           : "DANH SÁCH HỌP TRỰC TUYẾN";
-        createMeetingSheet(filteredMeetings, sheetTitle, sheetName);
+        createMeetingSheet(sortedFilteredMeetings, sheetTitle, sheetName);
       }
       const fileDate = appliedFilters.year || new Date().toISOString().slice(0, 10);
       XLSX.writeFile(workbook, `Danh_sach_hop_truc_tuyen_${fileDate}.xlsx`);
@@ -664,18 +672,29 @@ export default function OfficeMeetingsPage({ profile }) {
               <h3 className="h5 fw-bold mb-1">Danh sách cuộc họp</h3>
               <div className="small text-muted" aria-live="polite">
                 {appliedFilters.number || appliedFilters.year || appliedFilters.quarter || appliedFilters.content
-                  ? `${filteredMeetings.length.toLocaleString("vi-VN")} / ${meetings.length.toLocaleString("vi-VN")} cuộc họp phù hợp`
+                  ? `${filteredMeetings.length.toLocaleString("vi-VN")} / ${meetings.length.toLocaleString("vi-VN")} cuộc họp theo điều kiện`
                   : `${meetings.length.toLocaleString("vi-VN")} cuộc họp`}
               </div>
             </div>
-            <button type="button" className="btn btn-outline-danger btn-sm d-inline-flex align-items-center gap-2"
-              disabled={!meetings.length || deletingAll || deletingId !== null || saving}
-              onClick={deleteAllMeetings}>
-              {deletingAll
-                ? <span className="spinner-border spinner-border-sm" aria-hidden="true" />
-                : <span aria-hidden="true">🗑</span>}
-              {deletingAll ? "Đang xóa..." : "Xóa hết"}
-            </button>
+            <div className="d-flex align-items-stretch flex-wrap gap-2">
+              <div className="d-flex align-items-center gap-3 rounded-3 border bg-primary-subtle px-3 py-2"
+                aria-live="polite" aria-label={`Tổng số người họp: ${totalFilteredAttendees.toLocaleString("vi-VN")}`}>
+                <span className="d-inline-flex align-items-center justify-content-center rounded-circle bg-primary text-white"
+                  style={{ width: 38, height: 38 }} aria-hidden="true">👥</span>
+                <div>
+                  <div className="small text-primary-emphasis fw-semibold">Tổng số người họp</div>
+                  <div className="fs-5 fw-bold text-primary lh-1 mt-1">{totalFilteredAttendees.toLocaleString("vi-VN")}</div>
+                </div>
+              </div>
+              <button type="button" className="btn btn-outline-danger btn-sm d-inline-flex align-items-center gap-2"
+                disabled={!meetings.length || deletingAll || deletingId !== null || saving}
+                onClick={deleteAllMeetings}>
+                {deletingAll
+                  ? <span className="spinner-border spinner-border-sm" aria-hidden="true" />
+                  : <span aria-hidden="true">🗑</span>}
+                {deletingAll ? "Đang xóa..." : "Xóa hết"}
+              </button>
+            </div>
           </div>
 
           {loading ? <div className="text-center text-muted py-5" role="status">
