@@ -72,15 +72,16 @@ public sealed class OfficeMeetingsController(AppDbContext db, ILogger<OfficeMeet
             await attachment.CopyToAsync(stream, cancellationToken);
         }
 
+        var utcMeetingDate = EnsureUtc(meetingDate.Date);
         var meeting = new OfficeMeeting
         {
             Number = request.Number.Trim(),
-            MeetingDate = meetingDate.Date,
+            MeetingDate = utcMeetingDate,
             Content = request.Content.Trim(),
             AttendeeCount = request.AttendeeCount,
             AttachmentName = attachmentName,
             AttachmentPath = savedPath,
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = EnsureUtc(DateTime.UtcNow)
         };
 
         try
@@ -149,8 +150,9 @@ public sealed class OfficeMeetingsController(AppDbContext db, ILogger<OfficeMeet
         }
 
         var previousAttachmentPath = meeting.AttachmentPath;
+        var utcMeetingDate = EnsureUtc(meetingDate.Date);
         meeting.Number = request.Number.Trim();
-        meeting.MeetingDate = meetingDate.Date;
+        meeting.MeetingDate = utcMeetingDate;
         meeting.Content = request.Content.Trim();
         meeting.AttendeeCount = request.AttendeeCount;
         if (newAttachmentPath is not null)
@@ -308,6 +310,13 @@ public sealed class OfficeMeetingsController(AppDbContext db, ILogger<OfficeMeet
     private static bool TryParseMeetingDate(string value, out DateTime meetingDate) =>
         DateTime.TryParseExact(value, ["dd/MM/yyyy", "ddMMyyyy"], CultureInfo.InvariantCulture,
             DateTimeStyles.None, out meetingDate);
+
+    private static DateTime EnsureUtc(DateTime value) => value.Kind switch
+    {
+        DateTimeKind.Utc => value,
+        DateTimeKind.Local => value.ToUniversalTime(),
+        _ => DateTime.SpecifyKind(value, DateTimeKind.Utc)
+    };
 
     private void DeleteAttachmentFile(string? storedPath)
     {

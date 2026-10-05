@@ -59,6 +59,13 @@ namespace backend.Data
             return base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
         }
 
+        private static DateTime EnsureUtc(DateTime value) => value.Kind switch
+        {
+            DateTimeKind.Utc => value,
+            DateTimeKind.Local => value.ToUniversalTime(),
+            _ => DateTime.SpecifyKind(value, DateTimeKind.Utc)
+        };
+
         private void NormalizeDateTimes()
         {
             foreach (var entry in ChangeTracker.Entries())
@@ -67,9 +74,7 @@ namespace backend.Data
                 {
                     if (property.CurrentValue is DateTime value)
                     {
-                        property.CurrentValue = value.Kind == DateTimeKind.Local
-                            ? value.ToUniversalTime()
-                            : DateTime.SpecifyKind(value, DateTimeKind.Utc);
+                        property.CurrentValue = EnsureUtc(value);
                     }
                 }
             }
