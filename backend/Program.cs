@@ -155,6 +155,8 @@ using (var scope = app.Services.CreateScope())
             ALTER TABLE "Customers" ADD COLUMN IF NOT EXISTS "CitizenIdIssueDate" timestamp without time zone NULL;
             ALTER TABLE "Customers" ADD COLUMN IF NOT EXISTS "ExaminationPlace" text NOT NULL DEFAULT '';
             ALTER TABLE "Customers" ADD COLUMN IF NOT EXISTS "BirthDate" timestamp without time zone NULL;
+            ALTER TABLE "CatalogItems" ADD COLUMN IF NOT EXISTS "Location" text NOT NULL DEFAULT '';
+            ALTER TABLE "OfficeMeetings" ADD COLUMN IF NOT EXISTS "MeetingType" text NOT NULL DEFAULT '';
             """);
         db.Database.ExecuteSqlRaw("""
             CREATE OR REPLACE FUNCTION unicode_lower(value text)
