@@ -41,6 +41,7 @@ import TnbqCatalogPage from "./TnbqCatalogPage";
 import UserManagementPage from "./UserManagementPage";
 import OfficeMeetingsPage from "./OfficeMeetingsPage";
 import OfficeMeetingCatalogPage from "./OfficeMeetingCatalogPage";
+import OfficeMeetingListPage from "./OfficeMeetingListPage";
 import NationwideHealthStatisticsPage from "./NationwideHealthStatisticsPage";
 import { appModules, findModuleByPage } from "./navigationConfig";
 import api from "./api";
@@ -122,6 +123,7 @@ function App() {
     if (activePage === "campaignData") return <CampaignDataPage />;
     if (activePage === "healthObjectStatistics") return <HealthObjectStatisticsPage key={selectedObjectType ?? "total"} initialObjectType={selectedObjectType} />;
     if (activePage === "officeMeetings") return <OfficeMeetingsPage profile={profile} />;
+    if (activePage === "officeMeetingList") return <OfficeMeetingListPage />;
     if (activePage === "officeMeetingCatalog") return <OfficeMeetingCatalogPage />;
     if (activePage === "customers") return <CustomerPage />;
     if (activePage === "importData") return <ImportDataPage />;

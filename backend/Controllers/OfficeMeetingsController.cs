@@ -77,6 +77,7 @@ public sealed class OfficeMeetingsController(AppDbContext db, ILogger<OfficeMeet
         {
             Number = request.Number.Trim(),
             MeetingDate = utcMeetingDate,
+            MeetingType = request.MeetingType.Trim(),
             Content = request.Content.Trim(),
             AttendeeCount = request.AttendeeCount,
             AttachmentName = attachmentName,
@@ -153,6 +154,7 @@ public sealed class OfficeMeetingsController(AppDbContext db, ILogger<OfficeMeet
         var utcMeetingDate = EnsureUtc(meetingDate.Date);
         meeting.Number = request.Number.Trim();
         meeting.MeetingDate = utcMeetingDate;
+        meeting.MeetingType = request.MeetingType.Trim();
         meeting.Content = request.Content.Trim();
         meeting.AttendeeCount = request.AttendeeCount;
         if (newAttachmentPath is not null)
@@ -206,6 +208,15 @@ public sealed class OfficeMeetingsController(AppDbContext db, ILogger<OfficeMeet
         }
 
         return Ok(ToResponse(meeting));
+    }
+
+    [HttpPut("category")]
+    public async Task<IActionResult> UpdateCategory([FromBody] UpdateMeetingCategoryRequest request, CancellationToken cancellationToken)
+    {
+        if (request.Ids is null || request.Ids.Count == 0 || string.IsNullOrWhiteSpace(request.MeetingType)) return BadRequest(new { message = "Chưa chọn cuộc họp hoặc danh mục." });
+        var meetings = await db.OfficeMeetings.Where(x => request.Ids.Contains(x.Id)).ToListAsync(cancellationToken);
+        foreach (var meeting in meetings) meeting.MeetingType = request.MeetingType.Trim();
+        await db.SaveChangesAsync(cancellationToken); return Ok(new { count = meetings.Count });
     }
 
     [HttpGet("{id:int}/attachment")]
@@ -344,7 +355,7 @@ public sealed class OfficeMeetingsController(AppDbContext db, ILogger<OfficeMeet
 
     private static OfficeMeetingResponse ToResponse(OfficeMeeting meeting) =>
         new(meeting.Id, meeting.Number, meeting.MeetingDate.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
-            meeting.Content, meeting.AttendeeCount, meeting.AttachmentName);
+            meeting.MeetingType, meeting.Content, meeting.AttendeeCount, meeting.AttachmentName);
 }
 
 /// <summary>Form fields used to register a meeting and its optional attachment.</summary>
@@ -355,6 +366,9 @@ public sealed class CreateOfficeMeetingRequest
 
     [FromForm(Name = "MeetingDate"), System.ComponentModel.DataAnnotations.Required]
     public string MeetingDate { get; set; } = "";
+
+    [FromForm(Name = "MeetingType"), System.ComponentModel.DataAnnotations.Required]
+    public string MeetingType { get; set; } = "Họp Trực Tuyến";
 
     [FromForm(Name = "Content"), System.ComponentModel.DataAnnotations.Required, System.ComponentModel.DataAnnotations.StringLength(2000)]
     public string Content { get; set; } = "";
@@ -369,11 +383,14 @@ public sealed class CreateOfficeMeetingRequest
     public bool RemoveAttachment { get; set; }
 }
 
+public sealed record UpdateMeetingCategoryRequest(List<int> Ids, string MeetingType);
+
 /// <summary>Meeting details returned by the office meetings API.</summary>
 public sealed record OfficeMeetingResponse(
     int Id,
     string Number,
     string MeetingDate,
+    string MeetingType,
     string Content,
     int AttendeeCount,
     string? AttachmentName);

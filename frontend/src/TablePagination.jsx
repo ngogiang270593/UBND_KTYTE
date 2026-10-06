@@ -14,7 +14,7 @@ export default function TablePagination({ total, page, pageSize, onPageChange, o
   return <div className="table-pagination">
     <div className="table-pagination-summary" role="status">Hiện <strong>{number(firstRow)} - {number(lastRow)}</strong> trong số <strong>{number(total)}</strong> dòng</div>
     <select className="table-pagination-size" aria-label="Số dòng mỗi trang" value={pageSize} disabled={disabled} onChange={(event) => onPageSizeChange(Number(event.target.value))}>
-      {[10, 20, 50, 100].map((size) => <option key={size} value={size}>Hiện {size} dòng</option>)}
+      {[10, 50, 100].map((size) => <option key={size} value={size}>Hiện {size} dòng</option>)}
     </select>
     <nav className="table-pagination-pages" aria-label="Phân trang danh sách khám">
       <button type="button" aria-label="Trang đầu" title="Trang đầu" disabled={disabled || currentPage === 1} onClick={() => onPageChange(1)}><PageIcon direction="left" edge /></button>

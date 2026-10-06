@@ -1,15 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import DatePicker from "react-datepicker";
-import { vi } from "date-fns/locale";
 import XLSX from "xlsx-js-style";
-import "react-datepicker/dist/react-datepicker.css";
 import api from "./api";
 import TablePagination from "./TablePagination";
 import { useNotification } from "./NotificationProvider";
 
-const emptyForm = { number: "", meetingDate: null, content: "", attendeeCount: "", attachment: null };
+const meetingTypes = ["Họp Trực Tuyến", "Họp Trực Tiếp", "Họp Chủ Tịch, Phó Chủ Tịch", "Họp Ủy Ban", "Họp Khác"];
+const emptyForm = { number: "", meetingDate: null, meetingType: meetingTypes[0], content: "", attendeeCount: "", attachment: null };
 const currentYear = new Date().getFullYear();
-const emptyFilters = { number: "", year: String(currentYear), quarter: "", content: "" };
+const emptyFilters = { keyword: "", number: "", year: String(currentYear), quarter: "", content: "" };
 const allowedExtensions = new Set(["pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx", "jpg", "jpeg", "png", "txt", "zip"]);
 const maxAttachmentSize = 25 * 1024 * 1024;
 
@@ -72,7 +70,7 @@ function FileTypeIcon({ fileName }) {
   const isPdf = extension === "pdf";
   const color = isWord ? "#1686d9" : isPdf ? "#e23b3b" : "#64748b";
   const label = isWord ? "W" : isPdf ? "PDF" : extension.slice(0, 3).toUpperCase();
-  return <span aria-label={`Tệp ${extension}`} title={extension.toUpperCase()} className="d-inline-flex align-items-center justify-content-center fw-bold"
+  return <span aria-label={`Tệp ${fileName}`} title={fileName} className="d-inline-flex align-items-center justify-content-center fw-bold"
     style={{ width: 26, height: 30, color, border: `2px solid ${color}`, borderRadius: 4, fontSize: label.length > 1 ? 8 : 14 }}>
     {label}
   </span>;
@@ -82,6 +80,7 @@ export default function OfficeMeetingsPage({ profile }) {
   const { confirm } = useNotification();
   const [meetings, setMeetings] = useState([]);
   const [yearCatalog, setYearCatalog] = useState([]);
+  const [meetingTypeCatalog, setMeetingTypeCatalog] = useState([]);
   const [form, setForm] = useState(emptyForm);
   const [meetingDateInput, setMeetingDateInput] = useState("");
   const [editingMeeting, setEditingMeeting] = useState(null);
@@ -105,8 +104,9 @@ export default function OfficeMeetingsPage({ profile }) {
     Promise.allSettled([
       api.get("/OfficeMeetings"),
       api.get("/OfficeMeetingYears"),
+      api.get("/OfficeMeetingTypes"),
     ])
-      .then(([meetingResult, yearResult]) => {
+      .then(([meetingResult, yearResult, typeResult]) => {
         if (cancelled) return;
         if (meetingResult.status === "fulfilled") {
           setMeetings(meetingResult.value.data);
@@ -119,6 +119,12 @@ export default function OfficeMeetingsPage({ profile }) {
         }
         const years = Array.isArray(yearResult.value.data) ? yearResult.value.data : [];
         setYearCatalog(years);
+        if (typeResult.status === "fulfilled") {
+          const types = Array.isArray(typeResult.value.data) ? typeResult.value.data : [];
+          setMeetingTypeCatalog(types);
+          const defaultType = types.find((item) => item.isDefault)?.name || types[0]?.name;
+          if (defaultType) setForm((current) => current.meetingType === meetingTypes[0] ? { ...current, meetingType: defaultType } : current);
+        }
       })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
@@ -127,6 +133,7 @@ export default function OfficeMeetingsPage({ profile }) {
   const filteredMeetings = useMemo(() => {
     const number = normalizeText(appliedFilters.number);
     const content = normalizeText(appliedFilters.content);
+    const keyword = normalizeText(appliedFilters.keyword);
     const year = appliedFilters.year;
     const quarter = appliedFilters.quarter;
     return meetings.filter((meeting) =>
@@ -134,10 +141,10 @@ export default function OfficeMeetingsPage({ profile }) {
         const [meetingYear, meetingMonth] = String(meeting.meetingDate ?? "").slice(0, 10).split("-").map(Number);
         const meetingQuarter = meetingMonth ? Math.ceil(meetingMonth / 3) : null;
         return Boolean(year)
-          && (!number || normalizeText(meeting.number).includes(number))
+          && (!keyword ? (!number || normalizeText(meeting.number).includes(number)) && (!content || normalizeText(meeting.content).includes(content)) : (normalizeText(meeting.number).includes(keyword) || normalizeText(meeting.content).includes(keyword)))
           && meetingYear === Number(year)
           && (!quarter || meetingQuarter === Number(quarter))
-          && (!content || normalizeText(meeting.content).includes(content));
+          ;
       }
     );
   }, [appliedFilters, meetings]);
@@ -196,6 +203,7 @@ export default function OfficeMeetingsPage({ profile }) {
     setForm({
       number: meeting.number,
       meetingDate,
+      meetingType: meeting.meetingType || meetingTypeCatalog.find((item) => item.isDefault)?.name || meetingTypeCatalog[0]?.name || meetingTypes[0],
       content: meeting.content,
       attendeeCount: String(meeting.attendeeCount),
       attachment: null,
@@ -231,6 +239,7 @@ export default function OfficeMeetingsPage({ profile }) {
     const payload = new FormData();
     payload.append("Number", form.number);
     payload.append("MeetingDate", toApiDate(form.meetingDate));
+    payload.append("MeetingType", form.meetingType);
     payload.append("Content", form.content);
     payload.append("AttendeeCount", form.attendeeCount);
     if (form.attachment) payload.append("Attachment", form.attachment);
@@ -449,8 +458,6 @@ export default function OfficeMeetingsPage({ profile }) {
             <span className="badge rounded-pill text-bg-primary">VĂN PHÒNG</span>
             <span className="text-muted small">Quản lý và tra cứu cuộc họp</span>
           </div>
-          <h2 className="h3 fw-bold mb-1">Họp Trực tuyến</h2>
-          <p className="text-muted mb-0">Ghi nhận thông tin cuộc họp, đính kèm tài liệu và xuất danh sách.</p>
         </div>
       </div>
 
@@ -480,8 +487,15 @@ export default function OfficeMeetingsPage({ profile }) {
                     placeholder="Ví dụ: 01/2026" onChange={(event) => setForm({ ...form, number: event.target.value })} />
                 </div>
                 <div className="col-lg-4 col-md-6">
-                  <label htmlFor="office-meeting-date" className="form-label fw-semibold">Ngày nhập <span className="text-danger">*</span></label>
-                  <div className="input-group">
+                  <label htmlFor="office-meeting-type" className="form-label fw-semibold">Cuộc Họp <span className="text-danger">*</span></label>
+                  <select id="office-meeting-type" className="form-select" required value={form.meetingType}
+                    onChange={(event) => setForm((current) => ({ ...current, meetingType: event.target.value }))}>
+                    {(meetingTypeCatalog.length ? meetingTypeCatalog.map((item) => item.name) : meetingTypes).map((type) => <option key={type} value={type}>{type}</option>)}
+                  </select>
+                </div>
+                <div className="col-lg-4 col-md-6">
+                  <label htmlFor="office-meeting-date" className="form-label fw-semibold">Ngày họp <span className="text-danger">*</span></label>
+                  <div>
                     <input id="office-meeting-date" className="form-control" required inputMode="numeric"
                       placeholder="dd/MM/yyyy hoặc 01012026" value={meetingDateInput}
                       onChange={(event) => {
@@ -497,16 +511,6 @@ export default function OfficeMeetingsPage({ profile }) {
                           setForm((current) => ({ ...current, meetingDate: parsed }));
                         }
                       }} autoComplete="off" />
-                    <DatePicker
-                      id="office-meeting-calendar"
-                      selected={form.meetingDate}
-                      onChange={(date) => {
-                        setForm((current) => ({ ...current, meetingDate: date }));
-                        setMeetingDateInput(date ? formatDateInput(date) : "");
-                      }}
-                      dateFormat="dd/MM/yyyy" locale={vi} calendarStartDay={1}
-                      showMonthDropdown showYearDropdown dropdownMode="select" autoComplete="off"
-                      customInput={<button type="button" className="btn btn-outline-secondary" aria-label="Mở lịch chọn ngày">📅</button>} />
                   </div>
                 </div>
                 <div className="col-lg-4 col-md-6">
@@ -608,20 +612,7 @@ export default function OfficeMeetingsPage({ profile }) {
 
       <div className="card border-0 shadow-sm">
         <div className="card-body p-0">
-          <div className="p-4 pb-3 border-bottom bg-light bg-opacity-50">
-            <div className="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-3">
-              <div>
-                <h3 className="h5 fw-bold mb-1">Tìm kiếm cuộc họp</h3>
-                <div className="small text-muted">Nhập điều kiện cần tìm, sau đó chọn Tìm kiếm.</div>
-              </div>
-              <button type="button" className="btn btn-outline-secondary btn-sm"
-                disabled={!filters.number && filters.year === String(currentYear) && !filters.quarter && !filters.content
-                  && !appliedFilters.number && appliedFilters.year === String(currentYear) && !appliedFilters.quarter && !appliedFilters.content}
-                onClick={() => { setFilters(emptyFilters); setAppliedFilters(emptyFilters); setPage(1); }}>
-                Xóa điều kiện
-              </button>
-            </div>
-            <div className="row g-3">
+            <div className="px-4 pt-4 pb-3 mb-0"><label htmlFor="meeting-filter-keyword" className="form-label fw-semibold mb-2">Tìm kiếm cuộc họp</label><div className="input-group input-group-lg"><input id="meeting-filter-keyword" className="form-control" placeholder="Tìm theo số hoặc nội dung" value={filters.keyword} onChange={(event) => { const value = event.target.value; setFilters((current) => ({ ...current, keyword: value })); setAppliedFilters((current) => ({ ...current, keyword: value })); setPage(1); }} /></div></div><div className="row g-3 d-none">
               <div className="col-lg-3 col-md-6">
                 <label htmlFor="meeting-filter-number" className="form-label fw-semibold small">Số</label>
                 <input id="meeting-filter-number" className="form-control" placeholder="Tìm theo số"
@@ -648,7 +639,7 @@ export default function OfficeMeetingsPage({ profile }) {
                   value={filters.content} onChange={(event) => { setFilters((current) => ({ ...current, content: event.target.value })); setPage(1); }} />
               </div>
             </div>
-            <div className="d-flex justify-content-end flex-wrap gap-2 mt-3 pt-3 border-top">
+            <div className="d-none">
               <button type="button" className="btn btn-primary d-inline-flex align-items-center gap-2 px-4"
                 disabled={loading} onClick={() => { setAppliedFilters({ ...filters }); setPage(1); }}>
                 <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
@@ -767,7 +758,6 @@ export default function OfficeMeetingsPage({ profile }) {
               onPageChange={setPage} onPageSizeChange={(value) => { setPageSize(value); setPage(1); }} />
           </div>}
         </div>
-      </div>
     </section>
   );
 }

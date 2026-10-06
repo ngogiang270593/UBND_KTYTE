@@ -261,6 +261,7 @@ using (var scope = app.Services.CreateScope())
             Id INTEGER NOT NULL CONSTRAINT PK_OfficeMeetings PRIMARY KEY AUTOINCREMENT,
             Number TEXT NOT NULL,
             MeetingDate TEXT NOT NULL,
+            MeetingType TEXT NOT NULL DEFAULT 'Họp Trực Tuyến',
             Content TEXT NOT NULL,
             AttendeeCount INTEGER NOT NULL,
             AttachmentName TEXT NULL,
@@ -269,6 +270,7 @@ using (var scope = app.Services.CreateScope())
         );
         CREATE INDEX IF NOT EXISTS IX_OfficeMeetings_MeetingDate ON OfficeMeetings (MeetingDate);
         """);
+    try { db.Database.ExecuteSqlRaw("ALTER TABLE OfficeMeetings ADD COLUMN MeetingType TEXT NOT NULL DEFAULT 'Họp Trực Tuyến';"); } catch { }
     db.Database.ExecuteSqlRaw("""
         CREATE TABLE IF NOT EXISTS TnbqHouseholds (
             Id INTEGER NOT NULL CONSTRAINT PK_TnbqHouseholds PRIMARY KEY AUTOINCREMENT,
@@ -464,6 +466,7 @@ using (var scope = app.Services.CreateScope())
         }
     }
     db.Database.ExecuteSqlRaw("CREATE UNIQUE INDEX IF NOT EXISTS IX_CatalogItems_Category_Name ON CatalogItems (Category, Name);");
+    try { db.Database.ExecuteSqlRaw("ALTER TABLE CatalogItems ADD COLUMN Location TEXT NOT NULL DEFAULT '';"); } catch { }
     using (var command = db.Database.GetDbConnection().CreateCommand())
     {
         command.CommandText = "PRAGMA table_info('Customers');";

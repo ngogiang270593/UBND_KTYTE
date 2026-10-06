@@ -15,5 +15,6 @@ namespace backend.Models
         public string Name { get; set; } = string.Empty;
 
         public bool IsDefault { get; set; }
+        [MaxLength(200)] public string Location { get; set; } = "";
     }
 }

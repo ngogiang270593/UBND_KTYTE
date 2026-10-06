@@ -3,6 +3,7 @@ import api from "./api";
 import { useNotification } from "./NotificationProvider";
 
 const currentYear = new Date().getFullYear();
+const meetingTypes = ["Họp Trực Tuyến", "Họp Trực Tiếp", "Họp Chủ Tịch, Phó Chủ Tịch", "Họp Ủy Ban", "Họp Khác"];
 const getErrorMessage = (error) => error.response?.data?.message
   || "Không thể hoàn tất thao tác danh mục năm. Vui lòng thử lại.";
 
@@ -14,6 +15,12 @@ export default function OfficeMeetingCatalogPage() {
   const [editing, setEditing] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [meetingTypes, setMeetingTypes] = useState([]);
+  const [typeKeyword, setTypeKeyword] = useState("");
+  const [typeName, setTypeName] = useState("");
+  const [typeLocation, setTypeLocation] = useState("");
+  const [editingType, setEditingType] = useState(null);
+  const [activeTab, setActiveTab] = useState("types");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -35,6 +42,12 @@ export default function OfficeMeetingCatalogPage() {
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
   }, [notify]);
+
+  const loadMeetingTypes = useCallback(async () => { const { data } = await api.get("/OfficeMeetingTypes"); setMeetingTypes(Array.isArray(data) ? data : []); }, []);
+  useEffect(() => { loadMeetingTypes().catch((error) => notify(getErrorMessage(error), "error")); }, [loadMeetingTypes, notify]);
+  const saveMeetingType = async (event) => { event.preventDefault(); try { const payload = { name: typeName.trim(), location: typeLocation.trim() }; if (editingType) await api.put(`/OfficeMeetingTypes/${editingType.id}`, payload); else await api.post("/OfficeMeetingTypes", payload); setTypeName(""); setTypeLocation(""); setEditingType(null); await loadMeetingTypes(); notify("Đã lưu danh mục cuộc họp.", "success"); } catch (error) { notify(getErrorMessage(error), "error"); } };
+  const deleteMeetingType = async (item) => { if (!(await confirm({ title: "Xóa danh mục?", message: `Xóa “${item.name}”?`, confirmText: "Xóa" }))) return; try { await api.delete(`/OfficeMeetingTypes/${item.id}`); await loadMeetingTypes(); } catch (error) { notify(getErrorMessage(error), "error"); } };
+  const setDefaultMeetingType = async (item) => { try { await api.put(`/OfficeMeetingTypes/${item.id}/default`); await loadMeetingTypes(); } catch (error) { notify(getErrorMessage(error), "error"); } };
 
   const visibleItems = useMemo(() => {
     const normalizedKeyword = keyword.trim().toLocaleLowerCase("vi-VN");
@@ -109,7 +122,11 @@ export default function OfficeMeetingCatalogPage() {
         </div>
       </div>
 
-      <div className="card border-0 shadow-sm overflow-hidden">
+      <div className="nav nav-tabs mb-4" role="tablist">
+        <button type="button" className={`nav-link ${activeTab === "types" ? "active" : ""}`} onClick={() => setActiveTab("types")}>Cuộc Họp</button>
+        <button type="button" className={`nav-link ${activeTab === "years" ? "active" : ""}`} onClick={() => setActiveTab("years")}>Năm</button>
+      </div>
+      <div className={`card border-0 shadow-sm overflow-hidden ${activeTab === "years" ? "" : "d-none"}`}>
         <div className="card-header bg-white border-0 p-4 pb-3">
           <div className="d-flex justify-content-between align-items-start flex-wrap gap-3">
             <div>
@@ -184,6 +201,17 @@ export default function OfficeMeetingCatalogPage() {
                 </table>
               </div>}
             </div>
+          </div>
+        </div>
+      </div>
+      <div className={`card border-0 shadow-sm mt-4 ${activeTab === "types" ? "" : "d-none"}`}>
+        <div className="card-body p-4">
+          <h3 className="h5 fw-bold mb-1">Danh mục Cuộc Họp</h3>
+          <p className="text-muted mb-3">Các loại cuộc họp dùng trong tab Cuộc Họp.</p>
+          <div className="d-flex flex-wrap gap-2">
+            <form className="d-flex gap-2 mb-3" onSubmit={saveMeetingType}><input className="form-control" placeholder="Tên danh mục mới" value={typeName} onChange={(e) => setTypeName(e.target.value)} required /><input className="form-control" placeholder="Vị trí" value={typeLocation} onChange={(e) => setTypeLocation(e.target.value)} /><button className="btn btn-primary">{editingType ? "Lưu sửa" : "Thêm"}</button></form>
+          <input className="form-control mb-3" placeholder="Tìm kiếm danh mục" value={typeKeyword} onChange={(e) => setTypeKeyword(e.target.value)} />
+          <div className="table-responsive border rounded-3"><table className="table table-hover align-middle mb-0"><thead className="table-light"><tr><th className="ps-3">Tên danh mục Cuộc Họp</th><th>Vị trí</th><th>Trạng thái</th><th className="text-end pe-3">Thao tác</th></tr></thead><tbody>{meetingTypes.filter((item) => item.name.toLocaleLowerCase("vi-VN").includes(typeKeyword.toLocaleLowerCase("vi-VN")) || String(item.location || "").toLocaleLowerCase("vi-VN").includes(typeKeyword.toLocaleLowerCase("vi-VN"))).map((item) => <tr key={item.id}><th className="ps-3">{item.name}</th><td>{item.location || <span className="text-muted">Chưa chọn</span>}</td><td>{item.isDefault ? <span className="badge text-bg-primary">Mặc định</span> : <span className="text-muted">Đang dùng</span>}</td><td className="text-end pe-3 text-nowrap"><button className="btn btn-sm btn-outline-primary me-2" onClick={() => { setEditingType(item); setTypeName(item.name); setTypeLocation(item.location || ""); }}>Sửa</button><button className="btn btn-sm btn-outline-secondary me-2" onClick={() => setDefaultMeetingType(item)} disabled={item.isDefault}>Chọn mặc định</button><button className="btn btn-sm btn-outline-danger" onClick={() => deleteMeetingType(item)}>Xóa</button></td></tr>)}</tbody></table></div>
           </div>
         </div>
       </div>
