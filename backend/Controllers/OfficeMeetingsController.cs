@@ -350,7 +350,7 @@ public sealed class OfficeMeetingsController(AppDbContext db, ILogger<OfficeMeet
                 : Path.Combine(
                     Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
                     "UBND_KTYTE");
-        return Path.Combine(dataDirectory, "OfficeMeetingAttachments");
+        return Path.GetFullPath(Path.Combine(dataDirectory, "OfficeMeetingAttachments"));
     }
 
     private static OfficeMeetingResponse ToResponse(OfficeMeeting meeting) =>
