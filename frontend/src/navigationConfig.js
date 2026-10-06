@@ -34,6 +34,7 @@ export const appModules = [
   ]},
   { id: "office", title: "Văn phòng", icon: "🏢", links: [
     { key: "officeMeetings", label: "Nhập Cuộc Họp", icon: "💻" },
+    { key: "officeMeetingImport", label: "Import cuộc họp", icon: "📥" },
     { key: "officeMeetingList", label: "Danh sách họp", icon: "📋" },
     { key: "officeMeetingCatalog", label: "Danh mục", icon: "📚" },
   ]},
