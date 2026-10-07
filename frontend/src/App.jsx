@@ -1,4 +1,4 @@
-﻿import TanHoaAdmissionTcListPage from "./TanHoaAdmissionTcListPage";
+import TanHoaAdmissionTcListPage from "./TanHoaAdmissionTcListPage";
 import TanHoaAdmissionTcImportPage from "./TanHoaAdmissionTcImportPage";
 import TanHoaPaidKskListPage from "./TanHoaPaidKskListPage";
 import TanHoaPaidKskImportPage from "./TanHoaPaidKskImportPage";
@@ -43,6 +43,8 @@ import OfficeMeetingsPage from "./OfficeMeetingsPage";
 import OfficeMeetingCatalogPage from "./OfficeMeetingCatalogPage";
 import OfficeMeetingListPage from "./OfficeMeetingListPage";
 import OfficeMeetingImportPage from "./OfficeMeetingImportPage";
+import OfficeMeetingCalendarPage from "./OfficeMeetingCalendarPage";
+import OfficeMeetingSyncPage from "./OfficeMeetingSyncPage";
 import NationwideHealthStatisticsPage from "./NationwideHealthStatisticsPage";
 import { appModules, findModuleByPage } from "./navigationConfig";
 import api from "./api";
@@ -126,6 +128,8 @@ function App() {
     if (activePage === "officeMeetings") return <OfficeMeetingsPage profile={profile} />;
     if (activePage === "officeMeetingList") return <OfficeMeetingListPage />;
     if (activePage === "officeMeetingImport") return <OfficeMeetingImportPage />;
+    if (activePage === "officeMeetingCalendar") return <OfficeMeetingCalendarPage />;
+    if (activePage === "officeMeetingSync") return <OfficeMeetingSyncPage />;
     if (activePage === "officeMeetingCatalog") return <OfficeMeetingCatalogPage />;
     if (activePage === "customers") return <CustomerPage />;
     if (activePage === "importData") return <ImportDataPage />;

@@ -36,6 +36,8 @@ export const appModules = [
     { key: "officeMeetings", label: "Nhập Cuộc Họp", icon: "💻" },
     { key: "officeMeetingImport", label: "Import cuộc họp", icon: "📥" },
     { key: "officeMeetingList", label: "Danh sách họp", icon: "📋" },
+    { key: "officeMeetingCalendar", label: "Lịch Họp", icon: "🗓️" },
+    { key: "officeMeetingSync", label: "Đồng bộ dữ liệu cuộc họp", icon: "🔄" },
     { key: "officeMeetingCatalog", label: "Danh mục", icon: "📚" },
   ]},
   { id: "hospital", title: "Tân Châu", icon: "🏥", links: [

@@ -692,64 +692,7 @@ export default function OfficeMeetingsPage({ profile }) {
             <span className="spinner-border spinner-border-sm me-2" aria-hidden="true" />Đang tải danh sách...
           </div> : <div className="table-responsive">
             <table className="table table-hover align-middle mb-0">
-              <thead className="table-light">
-                <tr>
-                  <th className="ps-4" scope="col">Số</th>
-                  <th scope="col">Ngày nhập</th>
-                  <th scope="col">Nội dung</th>
-                  <th className="text-end" scope="col">Số người họp</th>
-                  <th scope="col">Đính kèm</th>
-                  <th scope="col" className="text-center">Thao tác</th>
-                </tr>
-              </thead>
-              <tbody>
-                {visibleMeetings.map((meeting) => (
-                  <tr key={meeting.id}>
-                    <td className="ps-4 fw-semibold text-nowrap">{meeting.number}</td>
-                    <td className="text-nowrap">{formatDate(meeting.meetingDate)}</td>
-                    <td style={{ minWidth: 240, whiteSpace: "pre-wrap" }}>{meeting.content}</td>
-                    <td className="text-end">{Number(meeting.attendeeCount).toLocaleString("vi-VN")}</td>
-                    <td>
-                      {meeting.attachmentName
-                        ? <button type="button" className="btn btn-link p-1"
-                          title={meeting.attachmentName}
-                            aria-label={`Tải xuống ${meeting.attachmentName}`}
-                            disabled={downloadingId === meeting.id}
-                            onClick={() => downloadMeetingAttachment(meeting)}>
-                            {downloadingId === meeting.id
-                              ? <span className="spinner-border spinner-border-sm" aria-label="Đang tải tệp" />
-                              : <FileTypeIcon fileName={meeting.attachmentName} />}
-                          </button>
-                        : <span className="text-muted">—</span>}
-                    </td>
-                    <td className="text-center">
-                      <div className="d-inline-flex gap-1">
-                        <button type="button" className="btn btn-outline-primary btn-sm"
-                          aria-label={`Sửa cuộc họp số ${meeting.number}`}
-                          title={`Sửa cuộc họp số ${meeting.number}`}
-                          disabled={deletingAll || deletingId !== null || saving}
-                          onClick={() => startEditingMeeting(meeting)}>
-                          <span aria-hidden="true">✎</span>
-                        </button>
-                        <button type="button" className="btn btn-outline-danger btn-sm"
-                          aria-label={`Xóa cuộc họp số ${meeting.number}`}
-                          title={`Xóa cuộc họp số ${meeting.number}`}
-                          disabled={deletingAll || deletingId !== null || saving}
-                          onClick={() => deleteMeeting(meeting)}>
-                          {deletingId === meeting.id
-                            ? <span className="spinner-border spinner-border-sm" aria-label="Đang xóa" />
-                            : <span aria-hidden="true">🗑</span>}
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-                {!visibleMeetings.length && <tr><td colSpan="6" className="text-center py-5">
-                  <div className="fs-2 mb-2" aria-hidden="true">{meetings.length === 0 ? "🗓️" : "⌕"}</div>
-                  <div className="fw-semibold">{meetings.length === 0 ? "Chưa có cuộc họp nào" : "Không tìm thấy cuộc họp phù hợp"}</div>
-                  <div className="text-muted small mt-1">{meetings.length === 0 ? "Thêm cuộc họp mới bằng biểu mẫu phía trên." : "Thử điều chỉnh hoặc xóa bớt điều kiện tìm kiếm."}</div>
-                </td></tr>}
-              </tbody>
+              <thead className="table-light"><tr><th rowSpan="2" className="text-center" style={{ width: 70 }}>STT</th><th rowSpan="2" className="text-center" style={{ minWidth: 460 }}>Thông tin chung</th><th rowSpan="2">Nội dung</th></tr></thead><tbody>{visibleMeetings.map((meeting, index) => (<tr key={meeting.id}><td className="text-center fw-semibold">{(currentPage - 1) * pageSize + index + 1}</td><td><div className="row g-2"><div className="col-md-6"><strong>Số:</strong> {meeting.number}<br/><strong>Ngày họp:</strong> {formatDate(meeting.meetingDate)}</div><div className="col-md-6"><strong>Số người họp:</strong> {Number(meeting.attendeeCount).toLocaleString("vi-VN")}<br/>{meeting.attachmentName && <button type="button" className="btn btn-link p-1" title={meeting.attachmentName} onClick={() => downloadMeetingAttachment(meeting)}>{downloadingId === meeting.id ? <span className="spinner-border spinner-border-sm" /> : <FileTypeIcon fileName={meeting.attachmentName} />}</button>}<div className="mt-1"><button type="button" className="btn btn-outline-primary btn-sm me-1" onClick={() => startEditingMeeting(meeting)}>Sửa</button><button type="button" className="btn btn-outline-danger btn-sm" onClick={() => deleteMeeting(meeting)}>Xóa</button></div></div></div></td><td style={{ minWidth: 280, whiteSpace: "pre-wrap" }}>{meeting.content}</td></tr>))}{!visibleMeetings.length && <tr><td colSpan="3" className="text-center py-5">Chưa có cuộc họp phù hợp</td></tr>}</tbody>
             </table>
           </div>}
 

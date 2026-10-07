@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const defaultApiBaseUrl = import.meta.env.MODE === "web"
-  ? "http://127.0.0.1:5023/api"
+  ? "/api"
   : (import.meta.env.DEV ? "/api" : "http://127.0.0.1:5022/api");
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || defaultApiBaseUrl;

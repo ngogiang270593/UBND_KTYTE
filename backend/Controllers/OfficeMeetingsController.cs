@@ -30,6 +30,24 @@ public sealed class OfficeMeetingsController(AppDbContext db, ILogger<OfficeMeet
         return Ok(meetings);
     }
 
+    [HttpPost("sync/import")]
+    public async Task<IActionResult> ImportSync([FromBody] List<OfficeMeetingSyncItem>? items, CancellationToken cancellationToken)
+    {
+        if (items is null || items.Count == 0) return BadRequest(new { message = "Khong co du lieu dong bo." });
+        var existing = await db.OfficeMeetings.AsNoTracking().Select(x => new { x.Number, x.MeetingDate }).ToListAsync(cancellationToken);
+        var keys = existing.Select(x => $"{x.Number.Trim()}|{x.MeetingDate:yyyy-MM-dd}").ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var added = 0;
+        foreach (var item in items)
+        {
+            if (!DateTime.TryParseExact(item.MeetingDate, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var date)) continue;
+            var key = $"{(item.Number ?? "").Trim()}|{date:yyyy-MM-dd}";
+            if (string.IsNullOrWhiteSpace(item.Number) || string.IsNullOrWhiteSpace(item.Content) || !keys.Add(key)) continue;
+            db.OfficeMeetings.Add(new OfficeMeeting { Number = item.Number.Trim(), MeetingDate = EnsureUtc(date.Date), MeetingType = (item.MeetingType ?? "").Trim(), Content = item.Content.Trim(), AttendeeCount = Math.Max(1, item.AttendeeCount), CreatedAt = DateTime.UtcNow });
+            added++;
+        }
+        await db.SaveChangesAsync(cancellationToken);
+        return Ok(new { total = items.Count, added, skipped = items.Count - added });
+    }
     [HttpGet("{id:int}")]
     public async Task<ActionResult<OfficeMeetingResponse>> GetById(int id, CancellationToken cancellationToken)
     {
@@ -394,3 +412,5 @@ public sealed record OfficeMeetingResponse(
     string Content,
     int AttendeeCount,
     string? AttachmentName);
+
+public sealed record OfficeMeetingSyncItem(string Number, string MeetingDate, string MeetingType, string Content, int AttendeeCount);
