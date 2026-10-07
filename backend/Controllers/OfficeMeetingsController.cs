@@ -98,6 +98,8 @@ public sealed class OfficeMeetingsController(AppDbContext db, ILogger<OfficeMeet
             MeetingType = request.MeetingType.Trim(),
             Content = request.Content.Trim(),
             AttendeeCount = request.AttendeeCount,
+            MeetingTimeRange = string.IsNullOrWhiteSpace(request.MeetingTimeRange) ? null : request.MeetingTimeRange.Trim(),
+            MeetingRoom = string.IsNullOrWhiteSpace(request.MeetingRoom) ? null : request.MeetingRoom.Trim(),
             AttachmentName = attachmentName,
             AttachmentPath = savedPath,
             CreatedAt = EnsureUtc(DateTime.UtcNow)
@@ -175,6 +177,8 @@ public sealed class OfficeMeetingsController(AppDbContext db, ILogger<OfficeMeet
         meeting.MeetingType = request.MeetingType.Trim();
         meeting.Content = request.Content.Trim();
         meeting.AttendeeCount = request.AttendeeCount;
+        meeting.MeetingTimeRange = string.IsNullOrWhiteSpace(request.MeetingTimeRange) ? null : request.MeetingTimeRange.Trim();
+        meeting.MeetingRoom = string.IsNullOrWhiteSpace(request.MeetingRoom) ? null : request.MeetingRoom.Trim();
         if (newAttachmentPath is not null)
         {
             meeting.AttachmentPath = newAttachmentPath;
@@ -373,7 +377,7 @@ public sealed class OfficeMeetingsController(AppDbContext db, ILogger<OfficeMeet
 
     private static OfficeMeetingResponse ToResponse(OfficeMeeting meeting) =>
         new(meeting.Id, meeting.Number, meeting.MeetingDate.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
-            meeting.MeetingType, meeting.Content, meeting.AttendeeCount, meeting.AttachmentName);
+            meeting.MeetingType, meeting.Content, meeting.AttendeeCount, meeting.AttachmentName, meeting.MeetingTimeRange, meeting.MeetingRoom);
 }
 
 /// <summary>Form fields used to register a meeting and its optional attachment.</summary>
@@ -394,6 +398,12 @@ public sealed class CreateOfficeMeetingRequest
     [FromForm(Name = "AttendeeCount"), System.ComponentModel.DataAnnotations.Range(1, 100000)]
     public int AttendeeCount { get; set; }
 
+    [FromForm(Name = "MeetingTimeRange")]
+    public string? MeetingTimeRange { get; set; }
+
+    [FromForm(Name = "MeetingRoom")]
+    public string? MeetingRoom { get; set; }
+
     [FromForm(Name = "Attachment")]
     public IFormFile? Attachment { get; set; }
 
@@ -411,6 +421,8 @@ public sealed record OfficeMeetingResponse(
     string MeetingType,
     string Content,
     int AttendeeCount,
-    string? AttachmentName);
+    string? AttachmentName,
+    string? MeetingTimeRange,
+    string? MeetingRoom);
 
 public sealed record OfficeMeetingSyncItem(string Number, string MeetingDate, string MeetingType, string Content, int AttendeeCount);

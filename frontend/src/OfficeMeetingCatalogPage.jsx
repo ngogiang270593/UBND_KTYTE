@@ -21,6 +21,10 @@ export default function OfficeMeetingCatalogPage() {
   const [typeLocation, setTypeLocation] = useState("");
   const [editingType, setEditingType] = useState(null);
   const [activeTab, setActiveTab] = useState("types");
+  const [rooms, setRooms] = useState([]);
+  const [roomKeyword, setRoomKeyword] = useState("");
+  const [roomName, setRoomName] = useState("");
+  const [editingRoom, setEditingRoom] = useState(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -45,6 +49,10 @@ export default function OfficeMeetingCatalogPage() {
 
   const loadMeetingTypes = useCallback(async () => { const { data } = await api.get("/OfficeMeetingTypes"); setMeetingTypes(Array.isArray(data) ? data : []); }, []);
   useEffect(() => { loadMeetingTypes().catch((error) => notify(getErrorMessage(error), "error")); }, [loadMeetingTypes, notify]);
+  const loadRooms = useCallback(async () => { const { data } = await api.get("/OfficeMeetingRooms"); setRooms(Array.isArray(data) ? data : []); }, []);
+  useEffect(() => { loadRooms().catch((error) => notify(getErrorMessage(error), "error")); }, [loadRooms, notify]);
+  const saveRoom = async (event) => { event.preventDefault(); try { if (editingRoom) await api.put(`/OfficeMeetingRooms/${editingRoom.id}`, { name: roomName.trim() }); else await api.post("/OfficeMeetingRooms", { name: roomName.trim() }); setRoomName(""); setEditingRoom(null); await loadRooms(); notify("Đã lưu phòng họp.", "success"); } catch (error) { notify(getErrorMessage(error), "error"); } };
+  const deleteRoom = async (room) => { if (!(await confirm({ title: "Xóa phòng họp?", message: `Xóa “${room.name}”?`, confirmText: "Xóa" }))) return; try { await api.delete(`/OfficeMeetingRooms/${room.id}`); await loadRooms(); } catch (error) { notify(getErrorMessage(error), "error"); } };
   const saveMeetingType = async (event) => { event.preventDefault(); try { const payload = { name: typeName.trim(), location: typeLocation.trim() }; if (editingType) await api.put(`/OfficeMeetingTypes/${editingType.id}`, payload); else await api.post("/OfficeMeetingTypes", payload); setTypeName(""); setTypeLocation(""); setEditingType(null); await loadMeetingTypes(); notify("Đã lưu danh mục cuộc họp.", "success"); } catch (error) { notify(getErrorMessage(error), "error"); } };
   const deleteMeetingType = async (item) => { if (!(await confirm({ title: "Xóa danh mục?", message: `Xóa “${item.name}”?`, confirmText: "Xóa" }))) return; try { await api.delete(`/OfficeMeetingTypes/${item.id}`); await loadMeetingTypes(); } catch (error) { notify(getErrorMessage(error), "error"); } };
   const setDefaultMeetingType = async (item) => { try { await api.put(`/OfficeMeetingTypes/${item.id}/default`); await loadMeetingTypes(); } catch (error) { notify(getErrorMessage(error), "error"); } };
@@ -125,6 +133,14 @@ export default function OfficeMeetingCatalogPage() {
       <div className="nav nav-tabs mb-4" role="tablist">
         <button type="button" className={`nav-link ${activeTab === "types" ? "active" : ""}`} onClick={() => setActiveTab("types")}>Cuộc Họp</button>
         <button type="button" className={`nav-link ${activeTab === "years" ? "active" : ""}`} onClick={() => setActiveTab("years")}>Năm</button>
+        <button type="button" className={`nav-link ${activeTab === "rooms" ? "active" : ""}`} onClick={() => setActiveTab("rooms")}>Phòng họp</button>
+      </div>
+      <div className={`card border-0 shadow-sm mt-4 ${activeTab === "rooms" ? "" : "d-none"}`}>
+        <div className="card-body p-4">
+          <div className="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-3"><div><h3 className="h5 fw-bold mb-1">Danh mục phòng họp</h3><div className="small text-muted">{rooms.length} phòng họp</div></div><input className="form-control" style={{ maxWidth: 320 }} placeholder="Tìm kiếm phòng họp" value={roomKeyword} onChange={(event) => setRoomKeyword(event.target.value)} /></div>
+          <form className="d-flex gap-2 mb-3" onSubmit={saveRoom}><input className="form-control" placeholder="Tên phòng họp" value={roomName} onChange={(event) => setRoomName(event.target.value)} required maxLength={200} /><button className="btn btn-primary">{editingRoom ? "Lưu thay đổi" : "Thêm phòng"}</button>{editingRoom && <button type="button" className="btn btn-outline-secondary" onClick={() => { setEditingRoom(null); setRoomName(""); }}>Hủy</button>}</form>
+          <div className="table-responsive border rounded"><table className="table table-hover align-middle mb-0"><thead className="table-light"><tr><th>STT</th><th>Phòng họp</th><th className="text-end">Thao tác</th></tr></thead><tbody>{rooms.filter((room) => room.name.toLocaleLowerCase("vi-VN").includes(roomKeyword.trim().toLocaleLowerCase("vi-VN"))).map((room, index) => <tr key={room.id}><td>{index + 1}</td><td>{room.name}</td><td className="text-end"><button className="btn btn-sm btn-outline-primary me-2" onClick={() => { setEditingRoom(room); setRoomName(room.name); }}>Sửa</button><button className="btn btn-sm btn-outline-danger" onClick={() => deleteRoom(room)}>Xóa</button></td></tr>)}{!rooms.filter((room) => room.name.toLocaleLowerCase("vi-VN").includes(roomKeyword.trim().toLocaleLowerCase("vi-VN"))).length && <tr><td colSpan="3" className="text-center text-muted py-4">Không tìm thấy phòng họp</td></tr>}</tbody></table></div>
+        </div>
       </div>
       <div className={`card border-0 shadow-sm overflow-hidden ${activeTab === "years" ? "" : "d-none"}`}>
         <div className="card-header bg-white border-0 p-4 pb-3">

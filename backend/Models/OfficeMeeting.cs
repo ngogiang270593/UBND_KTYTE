@@ -8,6 +8,8 @@ public class OfficeMeeting
     public string MeetingType { get; set; } = "Họp Trực Tuyến";
     public string Content { get; set; } = "";
     public int AttendeeCount { get; set; }
+    public string? MeetingTimeRange { get; set; }
+    public string? MeetingRoom { get; set; }
     public string? AttachmentName { get; set; }
     public string? AttachmentPath { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

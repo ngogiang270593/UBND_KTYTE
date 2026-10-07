@@ -5,7 +5,7 @@ import TablePagination from "./TablePagination";
 import { useNotification } from "./NotificationProvider";
 
 const meetingTypes = ["Họp Trực Tuyến", "Họp Trực Tiếp", "Họp Chủ Tịch, Phó Chủ Tịch", "Họp Ủy Ban", "Họp Khác"];
-const emptyForm = { number: "", meetingDate: null, meetingType: meetingTypes[0], content: "", attendeeCount: "", attachment: null };
+const emptyForm = { number: "", meetingDate: null, meetingType: meetingTypes[0], content: "", attendeeCount: "", meetingTimeRange: "", meetingRoom: "", attachment: null };
 const currentYear = new Date().getFullYear();
 const emptyFilters = { keyword: "", number: "", year: String(currentYear), quarter: "", content: "" };
 const allowedExtensions = new Set(["pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx", "jpg", "jpeg", "png", "txt", "zip"]);
@@ -81,6 +81,7 @@ export default function OfficeMeetingsPage({ profile }) {
   const [meetings, setMeetings] = useState([]);
   const [yearCatalog, setYearCatalog] = useState([]);
   const [meetingTypeCatalog, setMeetingTypeCatalog] = useState([]);
+  const [meetingRooms, setMeetingRooms] = useState([]);
   const [form, setForm] = useState(emptyForm);
   const [meetingDateInput, setMeetingDateInput] = useState("");
   const [editingMeeting, setEditingMeeting] = useState(null);
@@ -105,8 +106,9 @@ export default function OfficeMeetingsPage({ profile }) {
       api.get("/OfficeMeetings"),
       api.get("/OfficeMeetingYears"),
       api.get("/OfficeMeetingTypes"),
+      api.get("/OfficeMeetingRooms"),
     ])
-      .then(([meetingResult, yearResult, typeResult]) => {
+      .then(([meetingResult, yearResult, typeResult, roomResult]) => {
         if (cancelled) return;
         if (meetingResult.status === "fulfilled") {
           setMeetings(meetingResult.value.data);
@@ -125,6 +127,7 @@ export default function OfficeMeetingsPage({ profile }) {
           const defaultType = types.find((item) => item.isDefault)?.name || types[0]?.name;
           if (defaultType) setForm((current) => current.meetingType === meetingTypes[0] ? { ...current, meetingType: defaultType } : current);
         }
+        if (roomResult.status === "fulfilled") setMeetingRooms(Array.isArray(roomResult.value.data) ? roomResult.value.data : []);
       })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
@@ -206,6 +209,8 @@ export default function OfficeMeetingsPage({ profile }) {
       meetingType: meeting.meetingType || meetingTypeCatalog.find((item) => item.isDefault)?.name || meetingTypeCatalog[0]?.name || meetingTypes[0],
       content: meeting.content,
       attendeeCount: String(meeting.attendeeCount),
+      meetingTimeRange: meeting.meetingTimeRange || "",
+      meetingRoom: meeting.meetingRoom || "",
       attachment: null,
     });
     setMeetingDateInput(meetingDate ? formatDateInput(meetingDate) : "");
@@ -242,6 +247,8 @@ export default function OfficeMeetingsPage({ profile }) {
     payload.append("MeetingType", form.meetingType);
     payload.append("Content", form.content);
     payload.append("AttendeeCount", form.attendeeCount);
+    if (form.meetingTimeRange.trim()) payload.append("MeetingTimeRange", form.meetingTimeRange.trim());
+    if (form.meetingRoom.trim()) payload.append("MeetingRoom", form.meetingRoom.trim());
     if (form.attachment) payload.append("Attachment", form.attachment);
     if (editingMeeting) payload.append("RemoveAttachment", String(removeSavedAttachment));
 
@@ -519,6 +526,16 @@ export default function OfficeMeetingsPage({ profile }) {
                     placeholder="Nhập số người tham dự" value={form.attendeeCount}
                     onChange={(event) => setForm({ ...form, attendeeCount: event.target.value })} />
                 </div>
+                <div className="col-lg-4 col-md-6">
+                  <label htmlFor="office-meeting-time-range" className="form-label fw-semibold">Khoảng thời gian họp <span className="text-muted fw-normal">(không bắt buộc)</span></label>
+                  <input id="office-meeting-time-range" className="form-control" placeholder="Ví dụ: 08:00 - 10:00" value={form.meetingTimeRange} onChange={(event) => setForm({ ...form, meetingTimeRange: event.target.value })} />
+                </div>
+                <div className="col-lg-4 col-md-6">
+                  <label htmlFor="office-meeting-room" className="form-label fw-semibold">Phòng họp <span className="text-muted fw-normal">(không bắt buộc)</span></label>
+                  <select id="office-meeting-room" className="form-select" value={form.meetingRoom} onChange={(event) => setForm({ ...form, meetingRoom: event.target.value })}>
+                    <option value="">Chọn phòng họp</option>{meetingRooms.map((room) => <option key={room.id} value={room.name}>{room.name}</option>)}
+                  </select>
+                </div>
                 <div className="col-12">
                   <label htmlFor="office-meeting-content" className="form-label fw-semibold">Nội dung <span className="text-danger">*</span></label>
                   <textarea id="office-meeting-content" className="form-control" required maxLength={2000} rows={3}
@@ -692,7 +709,7 @@ export default function OfficeMeetingsPage({ profile }) {
             <span className="spinner-border spinner-border-sm me-2" aria-hidden="true" />Đang tải danh sách...
           </div> : <div className="table-responsive">
             <table className="table table-hover align-middle mb-0">
-              <thead className="table-light"><tr><th rowSpan="2" className="text-center" style={{ width: 70 }}>STT</th><th rowSpan="2" className="text-center" style={{ minWidth: 460 }}>Thông tin chung</th><th rowSpan="2">Nội dung</th></tr></thead><tbody>{visibleMeetings.map((meeting, index) => (<tr key={meeting.id}><td className="text-center fw-semibold">{(currentPage - 1) * pageSize + index + 1}</td><td><div className="row g-2"><div className="col-md-6"><strong>Số:</strong> {meeting.number}<br/><strong>Ngày họp:</strong> {formatDate(meeting.meetingDate)}</div><div className="col-md-6"><strong>Số người họp:</strong> {Number(meeting.attendeeCount).toLocaleString("vi-VN")}<br/>{meeting.attachmentName && <button type="button" className="btn btn-link p-1" title={meeting.attachmentName} onClick={() => downloadMeetingAttachment(meeting)}>{downloadingId === meeting.id ? <span className="spinner-border spinner-border-sm" /> : <FileTypeIcon fileName={meeting.attachmentName} />}</button>}<div className="mt-1"><button type="button" className="btn btn-outline-primary btn-sm me-1" onClick={() => startEditingMeeting(meeting)}>Sửa</button><button type="button" className="btn btn-outline-danger btn-sm" onClick={() => deleteMeeting(meeting)}>Xóa</button></div></div></div></td><td style={{ minWidth: 280, whiteSpace: "pre-wrap" }}>{meeting.content}</td></tr>))}{!visibleMeetings.length && <tr><td colSpan="3" className="text-center py-5">Chưa có cuộc họp phù hợp</td></tr>}</tbody>
+              <thead className="table-light"><tr><th rowSpan="2" className="text-center" style={{ width: 70 }}>STT</th><th rowSpan="2" className="text-center" style={{ minWidth: 460 }}>Thông tin chung</th><th rowSpan="2">Nội dung</th></tr></thead><tbody>{visibleMeetings.map((meeting, index) => (<tr key={meeting.id}><td className="text-center fw-semibold">{(currentPage - 1) * pageSize + index + 1}</td><td><div className="row g-2"><div className="col-md-6"><strong>Số:</strong> {meeting.number}<br/><strong>Ngày họp:</strong> {formatDate(meeting.meetingDate)}{meeting.meetingTimeRange && <><br/><strong>Giờ họp:</strong> {meeting.meetingTimeRange}</>}{meeting.meetingRoom && <><br/><strong>Phòng họp:</strong> {meeting.meetingRoom}</>}</div><div className="col-md-6"><strong>Số người họp:</strong> {Number(meeting.attendeeCount).toLocaleString("vi-VN")}<br/>{meeting.attachmentName && <button type="button" className="btn btn-link p-1" title={meeting.attachmentName} onClick={() => downloadMeetingAttachment(meeting)}>{downloadingId === meeting.id ? <span className="spinner-border spinner-border-sm" /> : <FileTypeIcon fileName={meeting.attachmentName} />}</button>}<div className="mt-1"><button type="button" className="btn btn-outline-primary btn-sm me-1" onClick={() => startEditingMeeting(meeting)}>Sửa</button><button type="button" className="btn btn-outline-danger btn-sm" onClick={() => deleteMeeting(meeting)}>Xóa</button></div></div></div></td><td style={{ minWidth: 280, whiteSpace: "pre-wrap" }}>{meeting.content}</td></tr>))}{!visibleMeetings.length && <tr><td colSpan="3" className="text-center py-5">Chưa có cuộc họp phù hợp</td></tr>}</tbody>
             </table>
           </div>}
 

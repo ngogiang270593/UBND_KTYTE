@@ -157,6 +157,8 @@ using (var scope = app.Services.CreateScope())
             ALTER TABLE "Customers" ADD COLUMN IF NOT EXISTS "BirthDate" timestamp without time zone NULL;
             ALTER TABLE "CatalogItems" ADD COLUMN IF NOT EXISTS "Location" text NOT NULL DEFAULT '';
             ALTER TABLE "OfficeMeetings" ADD COLUMN IF NOT EXISTS "MeetingType" text NOT NULL DEFAULT '';
+            ALTER TABLE "OfficeMeetings" ADD COLUMN IF NOT EXISTS "MeetingTimeRange" text NULL;
+            ALTER TABLE "OfficeMeetings" ADD COLUMN IF NOT EXISTS "MeetingRoom" text NULL;
             """);
         db.Database.ExecuteSqlRaw("""
             CREATE OR REPLACE FUNCTION unicode_lower(value text)
@@ -264,6 +266,8 @@ using (var scope = app.Services.CreateScope())
             Number TEXT NOT NULL,
             MeetingDate TEXT NOT NULL,
             MeetingType TEXT NOT NULL DEFAULT 'Họp Trực Tuyến',
+            MeetingTimeRange TEXT NULL,
+            MeetingRoom TEXT NULL,
             Content TEXT NOT NULL,
             AttendeeCount INTEGER NOT NULL,
             AttachmentName TEXT NULL,
@@ -273,6 +277,8 @@ using (var scope = app.Services.CreateScope())
         CREATE INDEX IF NOT EXISTS IX_OfficeMeetings_MeetingDate ON OfficeMeetings (MeetingDate);
         """);
     try { db.Database.ExecuteSqlRaw("ALTER TABLE OfficeMeetings ADD COLUMN MeetingType TEXT NOT NULL DEFAULT 'Họp Trực Tuyến';"); } catch { }
+    try { db.Database.ExecuteSqlRaw("ALTER TABLE OfficeMeetings ADD COLUMN MeetingTimeRange TEXT NULL;"); } catch { }
+    try { db.Database.ExecuteSqlRaw("ALTER TABLE OfficeMeetings ADD COLUMN MeetingRoom TEXT NULL;"); } catch { }
     db.Database.ExecuteSqlRaw("""
         CREATE TABLE IF NOT EXISTS TnbqHouseholds (
             Id INTEGER NOT NULL CONSTRAINT PK_TnbqHouseholds PRIMARY KEY AUTOINCREMENT,
