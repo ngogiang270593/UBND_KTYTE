@@ -17,7 +17,14 @@ public sealed class PublicOfficeMeetingsController(AppDbContext db) : Controller
     {
         var settings = await db.OfficeMeetingDisplaySettings.AsNoTracking()
             .Where(item => item.Id == 1)
-            .Select(item => new PublicMeetingDisplaySettingsResponse(item.RefreshSeconds, item.ScrollSeconds))
+            .Select(item => new PublicMeetingDisplaySettingsResponse(
+                item.RefreshSeconds,
+                item.ScrollSeconds,
+                item.TitleFont,
+                item.MeetingFont,
+                item.TitleFontSizePt,
+                item.MeetingFontSizePt,
+                item.DisplayPeriod))
             .SingleOrDefaultAsync(cancellationToken);
         return settings is null
             ? StatusCode(StatusCodes.Status503ServiceUnavailable, new { message = "Cấu hình lịch họp chưa sẵn sàng." })
@@ -27,7 +34,8 @@ public sealed class PublicOfficeMeetingsController(AppDbContext db) : Controller
     [HttpGet]
     public async Task<ActionResult<IReadOnlyList<PublicOfficeMeetingResponse>>> Get(
         [FromQuery] string? date,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        [FromQuery] string period = "day")
     {
         if (!DateTime.TryParseExact(
                 date,
@@ -39,11 +47,21 @@ public sealed class PublicOfficeMeetingsController(AppDbContext db) : Controller
             return BadRequest(new { message = "Ngày cần xem không hợp lệ." });
         }
 
-        var start = DateTime.SpecifyKind(meetingDay.Date, DateTimeKind.Utc);
-        var end = start.AddDays(1);
+        if (period is not ("day" or "week"))
+            return BadRequest(new { message = "Phạm vi lịch họp không hợp lệ." });
+
+        var firstDay = meetingDay.Date;
+        if (period == "week")
+        {
+            var daysSinceMonday = ((int)firstDay.DayOfWeek + 6) % 7;
+            firstDay = firstDay.AddDays(-daysSinceMonday);
+        }
+        var start = DateTime.SpecifyKind(firstDay, DateTimeKind.Utc);
+        var end = start.AddDays(period == "week" ? 7 : 1);
         var meetings = await db.OfficeMeetings.AsNoTracking()
             .Where(meeting => meeting.IsPublic && meeting.MeetingDate >= start && meeting.MeetingDate < end)
-            .OrderBy(meeting => meeting.MeetingTimeRange)
+            .OrderBy(meeting => meeting.MeetingDate)
+            .ThenBy(meeting => meeting.MeetingTimeRange)
             .ThenBy(meeting => meeting.Content)
             .Select(meeting => new PublicOfficeMeetingResponse(
                 meeting.MeetingDate.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
@@ -64,4 +82,11 @@ public sealed record PublicOfficeMeetingResponse(
     string? MeetingTimeRange,
     string? MeetingRoom);
 
-public sealed record PublicMeetingDisplaySettingsResponse(int RefreshSeconds, int ScrollSeconds);
+public sealed record PublicMeetingDisplaySettingsResponse(
+    int RefreshSeconds,
+    int ScrollSeconds,
+    string TitleFont,
+    string MeetingFont,
+    int TitleFontSizePt,
+    int MeetingFontSizePt,
+    string DisplayPeriod);

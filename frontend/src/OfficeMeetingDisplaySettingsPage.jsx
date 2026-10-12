@@ -3,7 +3,21 @@ import api from "./api";
 
 const refreshOptions = [5, 10, 15, 30, 60];
 const scrollOptions = [20, 30, 45, 60, 90];
-const initialSettings = { refreshSeconds: 15, scrollSeconds: 45 };
+const displayPeriodOptions = [
+  { value: "day", label: "Ngày hiện tại" },
+  { value: "week", label: "Tuần hiện tại (Thứ Hai – Chủ nhật)" },
+];
+const fontOptions = ["Times New Roman", "Arial", "Tahoma", "Georgia", "Verdana"];
+const fontSizeOptions = [10, 11, 12, 13, 14, 16, 18, 20, 22, 24, 28, 32, 36];
+const initialSettings = {
+  refreshSeconds: 15,
+  scrollSeconds: 45,
+  titleFont: "Times New Roman",
+  meetingFont: "Times New Roman",
+  titleFontSizePt: 14,
+  meetingFontSizePt: 13,
+  displayPeriod: "day",
+};
 const errorMessage = (error) => error.response?.data?.message || "Không thể hoàn tất yêu cầu. Vui lòng thử lại.";
 
 export default function OfficeMeetingDisplaySettingsPage() {
@@ -16,7 +30,15 @@ export default function OfficeMeetingDisplaySettingsPage() {
     let active = true;
     api.get("/OfficeMeetingDisplaySettings")
       .then(({ data }) => {
-        if (active) setSettings({ refreshSeconds: data.refreshSeconds, scrollSeconds: data.scrollSeconds });
+        if (active) setSettings({
+          refreshSeconds: data.refreshSeconds,
+          scrollSeconds: data.scrollSeconds,
+          titleFont: data.titleFont,
+          meetingFont: data.meetingFont,
+          titleFontSizePt: data.titleFontSizePt,
+          meetingFontSizePt: data.meetingFontSizePt,
+          displayPeriod: data.displayPeriod,
+        });
       })
       .catch((error) => {
         if (active) setMessage({ type: "danger", text: errorMessage(error) });
@@ -31,7 +53,15 @@ export default function OfficeMeetingDisplaySettingsPage() {
     setMessage(null);
     try {
       const { data } = await api.put("/OfficeMeetingDisplaySettings", settings);
-      setSettings({ refreshSeconds: data.refreshSeconds, scrollSeconds: data.scrollSeconds });
+      setSettings({
+        refreshSeconds: data.refreshSeconds,
+        scrollSeconds: data.scrollSeconds,
+        titleFont: data.titleFont,
+        meetingFont: data.meetingFont,
+        titleFontSizePt: data.titleFontSizePt,
+        meetingFontSizePt: data.meetingFontSizePt,
+        displayPeriod: data.displayPeriod,
+      });
       setMessage({ type: "success", text: "Đã lưu cấu hình màn hình lịch họp." });
     } catch (error) {
       setMessage({ type: "danger", text: errorMessage(error) });
@@ -69,6 +99,42 @@ export default function OfficeMeetingDisplaySettingsPage() {
                   {scrollOptions.map((seconds) => <option key={seconds} value={seconds}>{seconds} giây mỗi lượt</option>)}
                 </select>
                 <div className="form-text">Thời gian để danh sách chạy hết một lượt từ dưới lên trên.</div>
+              </div>
+              <div className="col-md-6">
+                <label className="form-label fw-semibold" htmlFor="office-display-period">Phạm vi lịch chạy</label>
+                <select id="office-display-period" className="form-select" value={settings.displayPeriod}
+                  onChange={(event) => setSettings((current) => ({ ...current, displayPeriod: event.target.value }))}>
+                  {displayPeriodOptions.map((period) => <option key={period.value} value={period.value}>{period.label}</option>)}
+                </select>
+                <div className="form-text">Chọn hiển thị các cuộc họp công khai của ngày hiện tại hoặc cả tuần.</div>
+              </div>
+              <div className="col-md-6">
+                <label className="form-label fw-semibold" htmlFor="office-display-title-font">Phông chữ tiêu đề</label>
+                <select id="office-display-title-font" className="form-select" value={settings.titleFont}
+                  onChange={(event) => setSettings((current) => ({ ...current, titleFont: event.target.value }))}>
+                  {fontOptions.map((font) => <option key={font} value={font}>{font}</option>)}
+                </select>
+              </div>
+              <div className="col-md-6">
+                <label className="form-label fw-semibold" htmlFor="office-display-meeting-font">Phông chữ cuộc họp</label>
+                <select id="office-display-meeting-font" className="form-select" value={settings.meetingFont}
+                  onChange={(event) => setSettings((current) => ({ ...current, meetingFont: event.target.value }))}>
+                  {fontOptions.map((font) => <option key={font} value={font}>{font}</option>)}
+                </select>
+              </div>
+              <div className="col-md-6">
+                <label className="form-label fw-semibold" htmlFor="office-display-title-size">Kích thước chữ tiêu đề</label>
+                <select id="office-display-title-size" className="form-select" value={settings.titleFontSizePt}
+                  onChange={(event) => setSettings((current) => ({ ...current, titleFontSizePt: Number(event.target.value) }))}>
+                  {fontSizeOptions.map((size) => <option key={size} value={size}>{size} pt</option>)}
+                </select>
+              </div>
+              <div className="col-md-6">
+                <label className="form-label fw-semibold" htmlFor="office-display-meeting-size">Kích thước chữ cuộc họp</label>
+                <select id="office-display-meeting-size" className="form-select" value={settings.meetingFontSizePt}
+                  onChange={(event) => setSettings((current) => ({ ...current, meetingFontSizePt: Number(event.target.value) }))}>
+                  {fontSizeOptions.map((size) => <option key={size} value={size}>{size} pt</option>)}
+                </select>
               </div>
             </div>
             <button type="submit" className="btn btn-primary mt-4" disabled={loading || saving}>

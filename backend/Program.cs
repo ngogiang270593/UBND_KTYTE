@@ -160,6 +160,11 @@ using (var scope = app.Services.CreateScope())
             ALTER TABLE "OfficeMeetings" ADD COLUMN IF NOT EXISTS "MeetingTimeRange" text NULL;
             ALTER TABLE "OfficeMeetings" ADD COLUMN IF NOT EXISTS "MeetingRoom" text NULL;
             ALTER TABLE "OfficeMeetings" ADD COLUMN IF NOT EXISTS "IsPublic" boolean NOT NULL DEFAULT FALSE;
+            ALTER TABLE "OfficeMeetingDisplaySettings" ADD COLUMN IF NOT EXISTS "TitleFont" text NOT NULL DEFAULT 'Times New Roman';
+            ALTER TABLE "OfficeMeetingDisplaySettings" ADD COLUMN IF NOT EXISTS "MeetingFont" text NOT NULL DEFAULT 'Times New Roman';
+            ALTER TABLE "OfficeMeetingDisplaySettings" ADD COLUMN IF NOT EXISTS "TitleFontSizePt" integer NOT NULL DEFAULT 14;
+            ALTER TABLE "OfficeMeetingDisplaySettings" ADD COLUMN IF NOT EXISTS "MeetingFontSizePt" integer NOT NULL DEFAULT 13;
+            ALTER TABLE "OfficeMeetingDisplaySettings" ADD COLUMN IF NOT EXISTS "DisplayPeriod" text NOT NULL DEFAULT 'day';
             """);
         db.Database.ExecuteSqlRaw("""
             CREATE OR REPLACE FUNCTION unicode_lower(value text)
@@ -576,9 +581,31 @@ using (var scope = app.Services.CreateScope())
             CREATE TABLE IF NOT EXISTS OfficeMeetingDisplaySettings (
                 Id INTEGER NOT NULL PRIMARY KEY CHECK (Id = 1),
                 RefreshSeconds INTEGER NOT NULL DEFAULT 15,
-                ScrollSeconds INTEGER NOT NULL DEFAULT 45
+                ScrollSeconds INTEGER NOT NULL DEFAULT 45,
+                TitleFont TEXT NOT NULL DEFAULT 'Times New Roman',
+                MeetingFont TEXT NOT NULL DEFAULT 'Times New Roman',
+                TitleFontSizePt INTEGER NOT NULL DEFAULT 14,
+                MeetingFontSizePt INTEGER NOT NULL DEFAULT 13,
+                DisplayPeriod TEXT NOT NULL DEFAULT 'day'
             );
             """);
+        using var settingsCommand = db.Database.GetDbConnection().CreateCommand();
+        settingsCommand.CommandText = "PRAGMA table_info('OfficeMeetingDisplaySettings');";
+        db.Database.OpenConnection();
+        var settingsColumns = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        using (var reader = settingsCommand.ExecuteReader())
+            while (reader.Read()) settingsColumns.Add(reader.GetString(1));
+        db.Database.CloseConnection();
+        if (!settingsColumns.Contains("TitleFont"))
+            db.Database.ExecuteSqlRaw("ALTER TABLE OfficeMeetingDisplaySettings ADD COLUMN TitleFont TEXT NOT NULL DEFAULT 'Times New Roman';");
+        if (!settingsColumns.Contains("MeetingFont"))
+            db.Database.ExecuteSqlRaw("ALTER TABLE OfficeMeetingDisplaySettings ADD COLUMN MeetingFont TEXT NOT NULL DEFAULT 'Times New Roman';");
+        if (!settingsColumns.Contains("TitleFontSizePt"))
+            db.Database.ExecuteSqlRaw("ALTER TABLE OfficeMeetingDisplaySettings ADD COLUMN TitleFontSizePt INTEGER NOT NULL DEFAULT 14;");
+        if (!settingsColumns.Contains("MeetingFontSizePt"))
+            db.Database.ExecuteSqlRaw("ALTER TABLE OfficeMeetingDisplaySettings ADD COLUMN MeetingFontSizePt INTEGER NOT NULL DEFAULT 13;");
+        if (!settingsColumns.Contains("DisplayPeriod"))
+            db.Database.ExecuteSqlRaw("ALTER TABLE OfficeMeetingDisplaySettings ADD COLUMN DisplayPeriod TEXT NOT NULL DEFAULT 'day';");
     }
     if (!db.OfficeMeetingDisplaySettings.Any())
     {
