@@ -10,4 +10,6 @@ public sealed class OfficeMeetingDisplaySettings
     public int TitleFontSizePt { get; set; } = 14;
     public int MeetingFontSizePt { get; set; } = 13;
     public string DisplayPeriod { get; set; } = "day";
+    public byte[]? BackgroundImageData { get; set; }
+    public string? BackgroundImageContentType { get; set; }
 }

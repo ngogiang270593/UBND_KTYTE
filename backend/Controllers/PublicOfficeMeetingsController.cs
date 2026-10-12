@@ -31,6 +31,22 @@ public sealed class PublicOfficeMeetingsController(AppDbContext db) : Controller
             : Ok(settings);
     }
 
+    [HttpGet("background")]
+    public async Task<IActionResult> GetBackground(CancellationToken cancellationToken)
+    {
+        var background = await db.OfficeMeetingDisplaySettings.AsNoTracking()
+            .Where(item => item.Id == 1)
+            .Select(item => new { item.BackgroundImageData, item.BackgroundImageContentType })
+            .SingleOrDefaultAsync(cancellationToken);
+        if (background?.BackgroundImageData is not { Length: > 0 } image
+            || background.BackgroundImageContentType is not ("image/jpeg" or "image/png" or "image/webp"))
+        {
+            return NoContent();
+        }
+
+        return File(image, background.BackgroundImageContentType);
+    }
+
     [HttpGet]
     public async Task<ActionResult<IReadOnlyList<PublicOfficeMeetingResponse>>> Get(
         [FromQuery] string? date,

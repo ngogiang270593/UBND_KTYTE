@@ -165,6 +165,8 @@ using (var scope = app.Services.CreateScope())
             ALTER TABLE "OfficeMeetingDisplaySettings" ADD COLUMN IF NOT EXISTS "TitleFontSizePt" integer NOT NULL DEFAULT 14;
             ALTER TABLE "OfficeMeetingDisplaySettings" ADD COLUMN IF NOT EXISTS "MeetingFontSizePt" integer NOT NULL DEFAULT 13;
             ALTER TABLE "OfficeMeetingDisplaySettings" ADD COLUMN IF NOT EXISTS "DisplayPeriod" text NOT NULL DEFAULT 'day';
+            ALTER TABLE "OfficeMeetingDisplaySettings" ADD COLUMN IF NOT EXISTS "BackgroundImageData" bytea NULL;
+            ALTER TABLE "OfficeMeetingDisplaySettings" ADD COLUMN IF NOT EXISTS "BackgroundImageContentType" text NULL;
             """);
         db.Database.ExecuteSqlRaw("""
             CREATE OR REPLACE FUNCTION unicode_lower(value text)
@@ -586,7 +588,9 @@ using (var scope = app.Services.CreateScope())
                 MeetingFont TEXT NOT NULL DEFAULT 'Times New Roman',
                 TitleFontSizePt INTEGER NOT NULL DEFAULT 14,
                 MeetingFontSizePt INTEGER NOT NULL DEFAULT 13,
-                DisplayPeriod TEXT NOT NULL DEFAULT 'day'
+                DisplayPeriod TEXT NOT NULL DEFAULT 'day',
+                BackgroundImageData BLOB NULL,
+                BackgroundImageContentType TEXT NULL
             );
             """);
         using var settingsCommand = db.Database.GetDbConnection().CreateCommand();
@@ -606,6 +610,10 @@ using (var scope = app.Services.CreateScope())
             db.Database.ExecuteSqlRaw("ALTER TABLE OfficeMeetingDisplaySettings ADD COLUMN MeetingFontSizePt INTEGER NOT NULL DEFAULT 13;");
         if (!settingsColumns.Contains("DisplayPeriod"))
             db.Database.ExecuteSqlRaw("ALTER TABLE OfficeMeetingDisplaySettings ADD COLUMN DisplayPeriod TEXT NOT NULL DEFAULT 'day';");
+        if (!settingsColumns.Contains("BackgroundImageData"))
+            db.Database.ExecuteSqlRaw("ALTER TABLE OfficeMeetingDisplaySettings ADD COLUMN BackgroundImageData BLOB NULL;");
+        if (!settingsColumns.Contains("BackgroundImageContentType"))
+            db.Database.ExecuteSqlRaw("ALTER TABLE OfficeMeetingDisplaySettings ADD COLUMN BackgroundImageContentType TEXT NULL;");
     }
     if (!db.OfficeMeetingDisplaySettings.Any())
     {

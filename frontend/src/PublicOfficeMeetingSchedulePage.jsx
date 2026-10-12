@@ -50,10 +50,12 @@ const getErrorMessage = (error) => error.response?.data?.message
 
 export default function PublicOfficeMeetingSchedulePage() {
   const [meetings, setMeetings] = useState([]);
+  const [backgroundUrl, setBackgroundUrl] = useState(backgroundImage);
   const [settings, setSettings] = useState(defaultSettings);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [settingsError, setSettingsError] = useState(false);
+  const [backgroundError, setBackgroundError] = useState(false);
   const [now, setNow] = useState(() => new Date());
   const currentMinutes = now.getHours() * 60 + now.getMinutes();
   const currentDateKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
@@ -75,6 +77,29 @@ export default function PublicOfficeMeetingSchedulePage() {
   useEffect(() => {
     const clock = window.setInterval(() => setNow(new Date()), 15000);
     return () => window.clearInterval(clock);
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    let objectUrl;
+    const controller = new AbortController();
+
+    api.get("/PublicOfficeMeetings/background", { responseType: "blob", signal: controller.signal })
+      .then(({ data, status }) => {
+        if (!active || status === 204) return;
+        objectUrl = URL.createObjectURL(data);
+        setBackgroundUrl(objectUrl);
+        setBackgroundError(false);
+      })
+      .catch((requestError) => {
+        if (active && requestError.code !== "ERR_CANCELED") setBackgroundError(true);
+      });
+
+    return () => {
+      active = false;
+      controller.abort();
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
   }, []);
 
   const refreshSchedule = useCallback(async (signal) => {
@@ -160,7 +185,7 @@ export default function PublicOfficeMeetingSchedulePage() {
     };
   }, []);
 
-  return <main className="public-meeting-page" style={{ backgroundImage: `linear-gradient(180deg,rgba(42,20,3,.4),rgba(42,20,3,.12) 44%,rgba(42,20,3,.24)),url("${backgroundImage}")` }}>
+  return <main className="public-meeting-page" style={{ backgroundImage: `linear-gradient(180deg,rgba(42,20,3,.4),rgba(42,20,3,.12) 44%,rgba(42,20,3,.24)),url("${backgroundUrl}")` }}>
     <style>{`
       *{box-sizing:border-box}
       .public-meeting-page{width:100%;height:100vh;height:100dvh;min-height:100dvh;overflow:hidden;padding:clamp(14px,3vw,36px);background-color:#6f3a09;background-size:cover;background-position:center;background-repeat:no-repeat;color:#fff6d6;font-family:var(--meeting-font,"Times New Roman"),serif}
@@ -197,6 +222,7 @@ export default function PublicOfficeMeetingSchedulePage() {
       <h1 className="public-meeting-title">Lịch Họp - UBND xã Tân Hòa</h1>
       <section className="public-meeting-board" aria-label="Lịch họp công khai trong ngày">
         {settingsError && <p className="public-meeting-settings-error" role="status">Đang dùng cấu hình mặc định; chưa tải được cấu hình lịch họp.</p>}
+        {backgroundError && <p className="public-meeting-settings-error" role="status">Không tải được ảnh nền tùy chỉnh; đang dùng nền mặc định.</p>}
         {error
           ? <div className="public-meeting-message public-meeting-error" role="alert">{error}</div>
           : loading

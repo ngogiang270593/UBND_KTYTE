@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import api from "./api";
 
 const refreshOptions = [5, 10, 15, 30, 60];
@@ -17,6 +17,7 @@ const initialSettings = {
   titleFontSizePt: 14,
   meetingFontSizePt: 13,
   displayPeriod: "day",
+  hasCustomBackground: false,
 };
 const errorMessage = (error) => error.response?.data?.message || "Không thể hoàn tất yêu cầu. Vui lòng thử lại.";
 
@@ -24,7 +25,18 @@ export default function OfficeMeetingDisplaySettingsPage() {
   const [settings, setSettings] = useState(initialSettings);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [backgroundFile, setBackgroundFile] = useState(null);
+  const [backgroundPreview, setBackgroundPreview] = useState(null);
+  const [uploadingBackground, setUploadingBackground] = useState(false);
   const [message, setMessage] = useState(null);
+  const localBackgroundPreview = useMemo(
+    () => backgroundFile ? URL.createObjectURL(backgroundFile) : null,
+    [backgroundFile],
+  );
+
+  useEffect(() => () => {
+    if (localBackgroundPreview) URL.revokeObjectURL(localBackgroundPreview);
+  }, [localBackgroundPreview]);
 
   useEffect(() => {
     let active = true;
@@ -38,6 +50,7 @@ export default function OfficeMeetingDisplaySettingsPage() {
           titleFontSizePt: data.titleFontSizePt,
           meetingFontSizePt: data.meetingFontSizePt,
           displayPeriod: data.displayPeriod,
+          hasCustomBackground: data.hasCustomBackground,
         });
       })
       .catch((error) => {
@@ -46,6 +59,26 @@ export default function OfficeMeetingDisplaySettingsPage() {
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
   }, []);
+
+  useEffect(() => {
+    let active = true;
+    if (backgroundFile || !settings.hasCustomBackground) return undefined;
+    let previewUrl;
+    api.get("/PublicOfficeMeetings/background", { responseType: "blob" })
+      .then(({ data, status }) => {
+        if (!active || status === 204) return;
+        previewUrl = URL.createObjectURL(data);
+        setBackgroundPreview(previewUrl);
+      })
+      .catch((error) => {
+        if (active) setMessage({ type: "danger", text: errorMessage(error) });
+      });
+
+    return () => {
+      active = false;
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+    };
+  }, [backgroundFile, settings.hasCustomBackground]);
 
   const save = async (event) => {
     event.preventDefault();
@@ -61,12 +94,54 @@ export default function OfficeMeetingDisplaySettingsPage() {
         titleFontSizePt: data.titleFontSizePt,
         meetingFontSizePt: data.meetingFontSizePt,
         displayPeriod: data.displayPeriod,
+        hasCustomBackground: data.hasCustomBackground,
       });
       setMessage({ type: "success", text: "Đã lưu cấu hình màn hình lịch họp." });
     } catch (error) {
       setMessage({ type: "danger", text: errorMessage(error) });
     } finally {
       setSaving(false);
+    }
+  };
+
+  const uploadBackground = async () => {
+    if (!backgroundFile) {
+      setMessage({ type: "warning", text: "Vui lòng chọn ảnh nền trước khi tải lên." });
+      return;
+    }
+    if (backgroundFile.size > 5 * 1024 * 1024) {
+      setMessage({ type: "warning", text: "Ảnh nền không được vượt quá 5 MB." });
+      return;
+    }
+
+    setUploadingBackground(true);
+    setMessage(null);
+    const formData = new FormData();
+    formData.append("image", backgroundFile);
+    try {
+      const { data } = await api.post("/OfficeMeetingDisplaySettings/background", formData);
+      setSettings((current) => ({ ...current, hasCustomBackground: data.hasCustomBackground }));
+      setBackgroundFile(null);
+      setMessage({ type: "success", text: "Đã tải ảnh nền. Trang lịch công khai sẽ tự động cập nhật." });
+    } catch (error) {
+      setMessage({ type: "danger", text: errorMessage(error) });
+    } finally {
+      setUploadingBackground(false);
+    }
+  };
+
+  const resetBackground = async () => {
+    setUploadingBackground(true);
+    setMessage(null);
+    try {
+      const { data } = await api.delete("/OfficeMeetingDisplaySettings/background");
+      setSettings((current) => ({ ...current, hasCustomBackground: data.hasCustomBackground }));
+      setBackgroundFile(null);
+      setMessage({ type: "success", text: "Đã khôi phục ảnh nền trống đồng mặc định." });
+    } catch (error) {
+      setMessage({ type: "danger", text: errorMessage(error) });
+    } finally {
+      setUploadingBackground(false);
     }
   };
 
@@ -81,6 +156,35 @@ export default function OfficeMeetingDisplaySettingsPage() {
           <a className="btn btn-outline-primary" href="/lich-hop" target="_blank" rel="noreferrer">Mở màn hình lịch họp</a>
         </div>
         {message && <div className={`alert alert-${message.type}`} role="alert">{message.text}</div>}
+        <div className="border rounded-3 p-3 mb-4">
+          <h3 className="h5 fw-bold">Ảnh nền lịch họp</h3>
+          <p className="text-muted">Tải JPEG, PNG hoặc WebP tối đa 5 MB. Ảnh được lưu dùng chung và không mất khi ứng dụng khởi động lại.</p>
+          <div className="row g-3 align-items-start">
+            <div className="col-lg-7">
+              <label className="form-label fw-semibold" htmlFor="office-display-background">Chọn ảnh nền</label>
+              <input id="office-display-background" type="file" className="form-control" accept="image/jpeg,image/png,image/webp"
+                disabled={uploadingBackground}
+                onChange={(event) => setBackgroundFile(event.target.files?.[0] || null)} />
+              <div className="d-flex flex-wrap gap-2 mt-3">
+                <button type="button" className="btn btn-primary" onClick={uploadBackground}
+                  disabled={!backgroundFile || uploadingBackground}>
+                  {uploadingBackground ? "Đang xử lý..." : "Tải ảnh nền lên"}
+                </button>
+                <button type="button" className="btn btn-outline-secondary" onClick={resetBackground}
+                  disabled={!settings.hasCustomBackground || uploadingBackground}>
+                  Dùng nền trống đồng mặc định
+                </button>
+              </div>
+            </div>
+            <div className="col-lg-5">
+              {(localBackgroundPreview || backgroundPreview) && (localBackgroundPreview || settings.hasCustomBackground)
+                ? <img src={localBackgroundPreview || backgroundPreview} alt="Xem trước ảnh nền lịch họp" className="img-fluid rounded-3 border"
+                  style={{ maxHeight: 190, width: "100%", objectFit: "cover" }} />
+                : <div className="rounded-3 border bg-light d-flex align-items-center justify-content-center text-muted"
+                  style={{ minHeight: 120 }}>Đang dùng nền trống đồng mặc định</div>}
+            </div>
+          </div>
+        </div>
         <form onSubmit={save}>
           <fieldset disabled={loading || saving}>
             <div className="row g-3">
