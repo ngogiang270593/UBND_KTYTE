@@ -60,6 +60,7 @@ public class ModuleAuthorizationFilter(AppDbContext db) : IAsyncAuthorizationFil
             "CommuneSubjects" => ["people"],
             "TanHoa" or "TanHoaNk" or "TanHoaPaidKsk" or "TanHoaAdmissionTc" => read ? ["tan-hoa", "stats"] : ["tan-hoa"],
             "OfficeMeetings" => ["office"],
+            "OfficeMeetingDisplaySettings" => ["office"],
             "OfficeMeetingYears" or "OfficeMeetingTypes" or "OfficeMeetingRooms" => ["office"],
             // User administration, legacy setup and unmapped endpoints are system-admin only.
             _ => []

@@ -12,6 +12,18 @@ namespace backend.Controllers;
 [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
 public sealed class PublicOfficeMeetingsController(AppDbContext db) : ControllerBase
 {
+    [HttpGet("settings")]
+    public async Task<ActionResult<PublicMeetingDisplaySettingsResponse>> GetSettings(CancellationToken cancellationToken)
+    {
+        var settings = await db.OfficeMeetingDisplaySettings.AsNoTracking()
+            .Where(item => item.Id == 1)
+            .Select(item => new PublicMeetingDisplaySettingsResponse(item.RefreshSeconds, item.ScrollSeconds))
+            .SingleOrDefaultAsync(cancellationToken);
+        return settings is null
+            ? StatusCode(StatusCodes.Status503ServiceUnavailable, new { message = "Cấu hình lịch họp chưa sẵn sàng." })
+            : Ok(settings);
+    }
+
     [HttpGet]
     public async Task<ActionResult<IReadOnlyList<PublicOfficeMeetingResponse>>> Get(
         [FromQuery] string? date,
@@ -51,3 +63,5 @@ public sealed record PublicOfficeMeetingResponse(
     string Content,
     string? MeetingTimeRange,
     string? MeetingRoom);
+
+public sealed record PublicMeetingDisplaySettingsResponse(int RefreshSeconds, int ScrollSeconds);

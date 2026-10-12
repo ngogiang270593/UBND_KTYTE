@@ -37,6 +37,7 @@ export const appModules = [
     { key: "officeMeetingImport", label: "Import cuộc họp", icon: "📥" },
     { key: "officeMeetingList", label: "Danh sách họp", icon: "📋" },
     { key: "officeMeetingCalendar", label: "Lịch Họp", icon: "🗓️" },
+    { key: "officeMeetingDisplaySettings", label: "Cấu hình màn hình lịch họp", icon: "⚙️" },
     { key: "officeMeetingSync", label: "Đồng bộ dữ liệu cuộc họp", icon: "🔄" },
     { key: "officeMeetingCatalog", label: "Danh mục", icon: "📚" },
   ]},

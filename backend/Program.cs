@@ -570,6 +570,22 @@ using (var scope = app.Services.CreateScope())
     db.Database.ExecuteSqlRaw("CREATE UNIQUE INDEX IF NOT EXISTS IX_CampaignHamletStats_HamletId ON CampaignHamletStats (HamletId);");
     }
 
+    if (db.Database.IsSqlite())
+    {
+        db.Database.ExecuteSqlRaw("""
+            CREATE TABLE IF NOT EXISTS OfficeMeetingDisplaySettings (
+                Id INTEGER NOT NULL PRIMARY KEY CHECK (Id = 1),
+                RefreshSeconds INTEGER NOT NULL DEFAULT 15,
+                ScrollSeconds INTEGER NOT NULL DEFAULT 45
+            );
+            """);
+    }
+    if (!db.OfficeMeetingDisplaySettings.Any())
+    {
+        db.OfficeMeetingDisplaySettings.Add(new backend.Models.OfficeMeetingDisplaySettings());
+        db.SaveChanges();
+    }
+
     db.CatalogItems.Where(x => x.Category == "address").ExecuteDelete();
 
     var catalogDefaults = new Dictionary<string, string[]>

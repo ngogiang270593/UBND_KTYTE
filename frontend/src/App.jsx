@@ -44,6 +44,7 @@ import OfficeMeetingCatalogPage from "./OfficeMeetingCatalogPage";
 import OfficeMeetingListPage from "./OfficeMeetingListPage";
 import OfficeMeetingImportPage from "./OfficeMeetingImportPage";
 import OfficeMeetingCalendarPage from "./OfficeMeetingCalendarPage";
+import OfficeMeetingDisplaySettingsPage from "./OfficeMeetingDisplaySettingsPage";
 import OfficeMeetingSyncPage from "./OfficeMeetingSyncPage";
 import PublicOfficeMeetingSchedulePage from "./PublicOfficeMeetingSchedulePage";
 import NationwideHealthStatisticsPage from "./NationwideHealthStatisticsPage";
@@ -134,6 +135,7 @@ function App() {
     if (activePage === "officeMeetingList") return <OfficeMeetingListPage />;
     if (activePage === "officeMeetingImport") return <OfficeMeetingImportPage />;
     if (activePage === "officeMeetingCalendar") return <OfficeMeetingCalendarPage />;
+    if (activePage === "officeMeetingDisplaySettings") return <OfficeMeetingDisplaySettingsPage />;
     if (activePage === "officeMeetingSync") return <OfficeMeetingSyncPage />;
     if (activePage === "officeMeetingCatalog") return <OfficeMeetingCatalogPage />;
     if (activePage === "customers") return <CustomerPage />;
