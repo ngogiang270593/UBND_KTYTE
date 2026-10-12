@@ -73,6 +73,15 @@ Content-Disposition: form-data; name="AttendeeCount"
 12
 --MeetingFormBoundary--
 
+### Update whether a meeting is public
+PATCH {{baseUrl}}/api/OfficeMeetings/1/public
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "isPublic": true
+}
+
 ### Update a meeting (digits-only date ddMMyyyy; attachment is optional)
 PUT {{baseUrl}}/api/OfficeMeetings/1
 Authorization: Bearer {{token}}

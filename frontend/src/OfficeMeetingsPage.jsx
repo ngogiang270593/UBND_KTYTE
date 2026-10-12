@@ -97,6 +97,7 @@ export default function OfficeMeetingsPage({ profile }) {
   const [deletingId, setDeletingId] = useState(null);
   const [deletingAll, setDeletingAll] = useState(false);
   const [downloadingId, setDownloadingId] = useState(null);
+  const [updatingPublicId, setUpdatingPublicId] = useState(null);
   const [exporting, setExporting] = useState(false);
   const [message, setMessage] = useState(null);
 
@@ -278,6 +279,20 @@ export default function OfficeMeetingsPage({ profile }) {
       setMessage({ type: "danger", text: getErrorMessage(error) });
     } finally {
       setSaving(false);
+    }
+  };
+
+  const toggleMeetingPublic = async (meeting) => {
+    setUpdatingPublicId(meeting.id);
+    setMessage(null);
+    try {
+      const { data } = await api.patch(`/OfficeMeetings/${meeting.id}/public`, { isPublic: !meeting.isPublic });
+      setMeetings((current) => current.map((item) => item.id === data.id ? data : item));
+      setMessage({ type: "success", text: `Đã ${data.isPublic ? "công khai" : "chuyển về nội bộ"} cuộc họp số ${data.number}.` });
+    } catch (error) {
+      setMessage({ type: "danger", text: getErrorMessage(error) });
+    } finally {
+      setUpdatingPublicId(null);
     }
   };
 
@@ -723,7 +738,39 @@ export default function OfficeMeetingsPage({ profile }) {
             <span className="spinner-border spinner-border-sm me-2" aria-hidden="true" />Đang tải danh sách...
           </div> : <div className="table-responsive">
             <table className="table table-hover align-middle mb-0">
-              <thead className="table-light"><tr><th rowSpan="2" className="text-center" style={{ width: 70 }}>STT</th><th rowSpan="2" className="text-center" style={{ minWidth: 460 }}>Thông tin chung</th><th rowSpan="2">Nội dung</th></tr></thead><tbody>{visibleMeetings.map((meeting, index) => (<tr key={meeting.id}><td className="text-center fw-semibold">{(currentPage - 1) * pageSize + index + 1}</td><td><div className="row g-2"><div className="col-md-6"><strong>Số:</strong> {meeting.number}<br/><strong>Ngày họp:</strong> {formatDate(meeting.meetingDate)}{meeting.meetingTimeRange && <><br/><strong>Giờ họp:</strong> {meeting.meetingTimeRange}</>}{meeting.meetingRoom && <><br/><strong>Phòng họp:</strong> {meeting.meetingRoom}</>}<br/><span className={`badge ${meeting.isPublic ? "text-bg-success" : "text-bg-secondary"}`}>{meeting.isPublic ? "Công khai" : "Nội bộ"}</span></div><div className="col-md-6"><strong>Số người họp:</strong> {Number(meeting.attendeeCount).toLocaleString("vi-VN")}<br/>{meeting.attachmentName && <button type="button" className="btn btn-link p-1" title={meeting.attachmentName} onClick={() => downloadMeetingAttachment(meeting)}>{downloadingId === meeting.id ? <span className="spinner-border spinner-border-sm" /> : <FileTypeIcon fileName={meeting.attachmentName} />}</button>}<div className="mt-1"><button type="button" className="btn btn-outline-primary btn-sm me-1" onClick={() => startEditingMeeting(meeting)}>Sửa</button><button type="button" className="btn btn-outline-danger btn-sm" onClick={() => deleteMeeting(meeting)}>Xóa</button></div></div></div></td><td style={{ minWidth: 280, whiteSpace: "pre-wrap" }}>{meeting.content}</td></tr>))}{!visibleMeetings.length && <tr><td colSpan="3" className="text-center py-5">Chưa có cuộc họp phù hợp</td></tr>}</tbody>
+              <thead className="table-light"><tr><th rowSpan="2" className="text-center" style={{ width: 70 }}>STT</th><th rowSpan="2" className="text-center" style={{ minWidth: 460 }}>Thông tin chung</th><th rowSpan="2">Nội dung</th></tr></thead>
+              <tbody>{visibleMeetings.map((meeting, index) => <tr key={meeting.id}>
+                <td className="text-center fw-semibold">{(currentPage - 1) * pageSize + index + 1}</td>
+                <td><div className="row g-2">
+                  <div className="col-md-6">
+                    <strong>Số:</strong> {meeting.number}<br />
+                    <strong>Ngày họp:</strong> {formatDate(meeting.meetingDate)}
+                    {meeting.meetingTimeRange && <><br /><strong>Giờ họp:</strong> {meeting.meetingTimeRange}</>}
+                    {meeting.meetingRoom && <><br /><strong>Phòng họp:</strong> {meeting.meetingRoom}</>}
+                    <br /><span className={`badge ${meeting.isPublic ? "text-bg-success" : "text-bg-secondary"}`}>{meeting.isPublic ? "Công khai" : "Nội bộ"}</span>
+                  </div>
+                  <div className="col-md-6">
+                    <strong>Số người họp:</strong> {Number(meeting.attendeeCount).toLocaleString("vi-VN")}<br />
+                    {meeting.attachmentName && <button type="button" className="btn btn-link p-1" title={meeting.attachmentName} onClick={() => downloadMeetingAttachment(meeting)}>
+                      {downloadingId === meeting.id ? <span className="spinner-border spinner-border-sm" /> : <FileTypeIcon fileName={meeting.attachmentName} />}
+                    </button>}
+                    <div className="mt-1 d-flex flex-wrap gap-1">
+                      <button type="button" className="btn btn-outline-primary btn-sm" onClick={() => startEditingMeeting(meeting)}>Sửa</button>
+                      <button type="button" className={`btn btn-sm ${meeting.isPublic ? "btn-outline-secondary" : "btn-outline-success"}`}
+                        disabled={updatingPublicId !== null || saving || deletingId === meeting.id}
+                        onClick={() => toggleMeetingPublic(meeting)}>
+                        {updatingPublicId === meeting.id
+                          ? <span className="spinner-border spinner-border-sm me-1" aria-hidden="true" />
+                          : null}
+                        {meeting.isPublic ? "Chuyển nội bộ" : "Công khai"}
+                      </button>
+                      <button type="button" className="btn btn-outline-danger btn-sm" onClick={() => deleteMeeting(meeting)}>Xóa</button>
+                    </div>
+                  </div>
+                </div></td>
+                <td style={{ minWidth: 280, whiteSpace: "pre-wrap" }}>{meeting.content}</td>
+              </tr>)}
+              {!visibleMeetings.length && <tr><td colSpan="3" className="text-center py-5">Chưa có cuộc họp phù hợp</td></tr>}</tbody>
             </table>
           </div>}
 

@@ -245,6 +245,20 @@ public sealed class OfficeMeetingsController(AppDbContext db, ILogger<OfficeMeet
         return Ok(ToResponse(meeting));
     }
 
+    [HttpPatch("{id:int}/public")]
+    public async Task<ActionResult<OfficeMeetingResponse>> UpdatePublicStatus(
+        int id,
+        [FromBody] UpdateMeetingPublicStatusRequest request,
+        CancellationToken cancellationToken)
+    {
+        var meeting = await db.OfficeMeetings.SingleOrDefaultAsync(x => x.Id == id, cancellationToken);
+        if (meeting is null) return NotFound(new { message = "Không tìm thấy cuộc họp cần cập nhật." });
+
+        meeting.IsPublic = request.IsPublic;
+        await db.SaveChangesAsync(cancellationToken);
+        return Ok(ToResponse(meeting));
+    }
+
     [HttpPut("category")]
     public async Task<IActionResult> UpdateCategory([FromBody] UpdateMeetingCategoryRequest request, CancellationToken cancellationToken)
     {
@@ -428,6 +442,7 @@ public sealed class CreateOfficeMeetingRequest
 }
 
 public sealed record UpdateMeetingCategoryRequest(List<int> Ids, string MeetingType);
+public sealed record UpdateMeetingPublicStatusRequest(bool IsPublic);
 
 /// <summary>Meeting details returned by the office meetings API.</summary>
 public sealed record OfficeMeetingResponse(
