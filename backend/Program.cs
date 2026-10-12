@@ -159,6 +159,7 @@ using (var scope = app.Services.CreateScope())
             ALTER TABLE "OfficeMeetings" ADD COLUMN IF NOT EXISTS "MeetingType" text NOT NULL DEFAULT '';
             ALTER TABLE "OfficeMeetings" ADD COLUMN IF NOT EXISTS "MeetingTimeRange" text NULL;
             ALTER TABLE "OfficeMeetings" ADD COLUMN IF NOT EXISTS "MeetingRoom" text NULL;
+            ALTER TABLE "OfficeMeetings" ADD COLUMN IF NOT EXISTS "IsPublic" boolean NOT NULL DEFAULT FALSE;
             """);
         db.Database.ExecuteSqlRaw("""
             CREATE OR REPLACE FUNCTION unicode_lower(value text)
@@ -268,6 +269,7 @@ using (var scope = app.Services.CreateScope())
             MeetingType TEXT NOT NULL DEFAULT 'Họp Trực Tuyến',
             MeetingTimeRange TEXT NULL,
             MeetingRoom TEXT NULL,
+            IsPublic INTEGER NOT NULL DEFAULT 0,
             Content TEXT NOT NULL,
             AttendeeCount INTEGER NOT NULL,
             AttachmentName TEXT NULL,
@@ -279,6 +281,7 @@ using (var scope = app.Services.CreateScope())
     try { db.Database.ExecuteSqlRaw("ALTER TABLE OfficeMeetings ADD COLUMN MeetingType TEXT NOT NULL DEFAULT 'Họp Trực Tuyến';"); } catch { }
     try { db.Database.ExecuteSqlRaw("ALTER TABLE OfficeMeetings ADD COLUMN MeetingTimeRange TEXT NULL;"); } catch { }
     try { db.Database.ExecuteSqlRaw("ALTER TABLE OfficeMeetings ADD COLUMN MeetingRoom TEXT NULL;"); } catch { }
+    try { db.Database.ExecuteSqlRaw("ALTER TABLE OfficeMeetings ADD COLUMN IsPublic INTEGER NOT NULL DEFAULT 0;"); } catch { }
     db.Database.ExecuteSqlRaw("""
         CREATE TABLE IF NOT EXISTS TnbqHouseholds (
             Id INTEGER NOT NULL CONSTRAINT PK_TnbqHouseholds PRIMARY KEY AUTOINCREMENT,
@@ -629,4 +632,3 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
-

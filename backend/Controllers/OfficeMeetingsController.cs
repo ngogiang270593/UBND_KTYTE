@@ -51,6 +51,7 @@ public sealed class OfficeMeetingsController(AppDbContext db, ILogger<OfficeMeet
                 AttendeeCount = Math.Max(1, item.AttendeeCount),
                 MeetingTimeRange = string.IsNullOrWhiteSpace(item.MeetingTimeRange) ? null : item.MeetingTimeRange.Trim(),
                 MeetingRoom = string.IsNullOrWhiteSpace(item.MeetingRoom) ? null : item.MeetingRoom.Trim(),
+                IsPublic = item.IsPublic,
                 CreatedAt = DateTime.UtcNow
             });
             added++;
@@ -110,6 +111,7 @@ public sealed class OfficeMeetingsController(AppDbContext db, ILogger<OfficeMeet
             AttendeeCount = request.AttendeeCount,
             MeetingTimeRange = string.IsNullOrWhiteSpace(request.MeetingTimeRange) ? null : request.MeetingTimeRange.Trim(),
             MeetingRoom = string.IsNullOrWhiteSpace(request.MeetingRoom) ? null : request.MeetingRoom.Trim(),
+            IsPublic = request.IsPublic ?? false,
             AttachmentName = attachmentName,
             AttachmentPath = savedPath,
             CreatedAt = EnsureUtc(DateTime.UtcNow)
@@ -189,6 +191,7 @@ public sealed class OfficeMeetingsController(AppDbContext db, ILogger<OfficeMeet
         meeting.AttendeeCount = request.AttendeeCount;
         meeting.MeetingTimeRange = string.IsNullOrWhiteSpace(request.MeetingTimeRange) ? null : request.MeetingTimeRange.Trim();
         meeting.MeetingRoom = string.IsNullOrWhiteSpace(request.MeetingRoom) ? null : request.MeetingRoom.Trim();
+        if (request.IsPublic.HasValue) meeting.IsPublic = request.IsPublic.Value;
         if (newAttachmentPath is not null)
         {
             meeting.AttachmentPath = newAttachmentPath;
@@ -387,7 +390,7 @@ public sealed class OfficeMeetingsController(AppDbContext db, ILogger<OfficeMeet
 
     private static OfficeMeetingResponse ToResponse(OfficeMeeting meeting) =>
         new(meeting.Id, meeting.Number, meeting.MeetingDate.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
-            meeting.MeetingType, meeting.Content, meeting.AttendeeCount, meeting.AttachmentName, meeting.MeetingTimeRange, meeting.MeetingRoom);
+            meeting.MeetingType, meeting.Content, meeting.AttendeeCount, meeting.AttachmentName, meeting.MeetingTimeRange, meeting.MeetingRoom, meeting.IsPublic);
 }
 
 /// <summary>Form fields used to register a meeting and its optional attachment.</summary>
@@ -414,6 +417,9 @@ public sealed class CreateOfficeMeetingRequest
     [FromForm(Name = "MeetingRoom")]
     public string? MeetingRoom { get; set; }
 
+    [FromForm(Name = "IsPublic")]
+    public bool? IsPublic { get; set; }
+
     [FromForm(Name = "Attachment")]
     public IFormFile? Attachment { get; set; }
 
@@ -433,7 +439,8 @@ public sealed record OfficeMeetingResponse(
     int AttendeeCount,
     string? AttachmentName,
     string? MeetingTimeRange,
-    string? MeetingRoom);
+    string? MeetingRoom,
+    bool IsPublic);
 
 public sealed record OfficeMeetingSyncItem(
     string Number,
@@ -442,4 +449,5 @@ public sealed record OfficeMeetingSyncItem(
     string Content,
     int AttendeeCount,
     string? MeetingTimeRange = null,
-    string? MeetingRoom = null);
+    string? MeetingRoom = null,
+    bool IsPublic = false);

@@ -1,4 +1,5 @@
 using backend.Data;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.AspNetCore.Mvc.Filters;
@@ -12,6 +13,7 @@ public class ModuleAuthorizationFilter(AppDbContext db) : IAsyncAuthorizationFil
     public async Task OnAuthorizationAsync(AuthorizationFilterContext context)
     {
         if (context.ActionDescriptor is not ControllerActionDescriptor action) return;
+        if (action.EndpointMetadata.OfType<IAllowAnonymous>().Any()) return;
         var controller = action.ControllerName;
         if (controller == "Auth" && action.ActionName == "Login") return;
         var username = context.HttpContext.User.Identity?.Name;

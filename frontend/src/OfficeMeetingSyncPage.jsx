@@ -10,9 +10,11 @@ const normalize = (value) => String(value ?? "")
   .trim();
 
 const getValue = (row, ...names) => {
-  const key = Object.keys(row).find((name) => names.includes(normalize(name)));
+  const matchingNames = new Set(names.map(normalize));
+  const key = Object.keys(row).find((name) => matchingNames.has(normalize(name)));
   return key ? row[key] : "";
 };
+const isPublicValue = (value) => value === true || ["true", "1", "x", "yes", "co", "cong khai"].includes(normalize(value));
 
 const formatDate = (value) => {
   if (value instanceof Date) return `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, "0")}-${String(value.getDate()).padStart(2, "0")}`;
@@ -30,6 +32,7 @@ const parseRows = (data) => (Array.isArray(data) ? data : []).map((row) => ({
   attendeeCount: Number(getValue(row, "số người họp", "so nguoi hop", "attendeecount", "attendee count")) || 1,
   meetingTimeRange: String(getValue(row, "khoảng thời gian họp", "khoang thoi gian hop", "meetingtimerange", "meeting time range")),
   meetingRoom: String(getValue(row, "phòng họp", "phong hop", "meetingroom", "meeting room")),
+  isPublic: isPublicValue(getValue(row, "công khai", "cong khai", "ispublic", "is public")),
 })).filter((row) => row.number || row.content);
 
 export default function OfficeMeetingSyncPage() {
@@ -70,6 +73,7 @@ export default function OfficeMeetingSyncPage() {
         "Số người họp": meeting.attendeeCount,
         "Khoảng thời gian họp": meeting.meetingTimeRange || "",
         "Phòng họp": meeting.meetingRoom || "",
+        "Công khai": meeting.isPublic ? "Có" : "Không",
       }));
       const blob = new Blob([JSON.stringify(clean, null, 2)], { type: "application/json;charset=utf-8" });
       const url = URL.createObjectURL(blob);
@@ -115,10 +119,10 @@ export default function OfficeMeetingSyncPage() {
         <div className="fw-semibold mb-2">Tổng số cuộc họp: {rows.length}</div>
         {rows.length > 0 && <div className="table-responsive border rounded">
           <table className="table table-sm align-middle mb-0">
-            <thead><tr><th>Số</th><th>Ngày họp</th><th>Nội dung</th><th>Khoảng thời gian họp</th><th>Phòng họp</th></tr></thead>
+            <thead><tr><th>Số</th><th>Ngày họp</th><th>Nội dung</th><th>Khoảng thời gian họp</th><th>Phòng họp</th><th>Công khai</th></tr></thead>
             <tbody>{rows.slice(0, 20).map((row, index) => <tr key={`${row.number}-${index}`}>
               <td>{row.number}</td><td>{row.meetingDate}</td><td>{row.content}</td>
-              <td>{row.meetingTimeRange}</td><td>{row.meetingRoom}</td>
+              <td>{row.meetingTimeRange}</td><td>{row.meetingRoom}</td><td>{row.isPublic ? "Có" : "Không"}</td>
             </tr>)}</tbody>
           </table>
         </div>}

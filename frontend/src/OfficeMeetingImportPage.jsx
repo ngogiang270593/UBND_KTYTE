@@ -3,6 +3,7 @@ import * as XLSX from "xlsx";
 import api from "./api";
 
 const normalize = (value) => String(value ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/đ/gi, "d").toLowerCase().trim();
+const isPublicValue = (value) => value === true || ["true", "1", "x", "yes", "co", "cong khai"].includes(normalize(value));
 const dateValue = (value) => {
   if (value instanceof Date) return `${String(value.getDate()).padStart(2, "0")}/${String(value.getMonth() + 1).padStart(2, "0")}/${value.getFullYear()}`;
   const text = String(value ?? "").trim();
@@ -40,6 +41,7 @@ export default function OfficeMeetingImportPage() {
           meetingType: String(get("Cuộc Họp", "Cuộc họp", "MeetingType") || "Họp Trực Tuyến"),
           meetingTimeRange: String(get("Khoảng thời gian họp", "MeetingTimeRange")),
           meetingRoom: String(get("Phòng họp", "MeetingRoom")),
+          isPublic: isPublicValue(get("Công khai", "IsPublic")),
         };
       }).filter((row) => row.number || row.content);
       setRows(parsed);
@@ -80,17 +82,17 @@ export default function OfficeMeetingImportPage() {
     <div className="card border-0 shadow-sm rounded-4 overflow-hidden">
       <div className="card-body p-4">
         <h2 className="h3 fw-bold mb-2">Import cuộc họp</h2>
-        <p className="text-muted">Chọn file Excel được xuất từ Danh sách họp. Hệ thống đọc các cột Số, Ngày họp, Nội dung, Số người họp, Cuộc Họp, Khoảng thời gian họp và Phòng họp.</p>
+        <p className="text-muted">Chọn file Excel được xuất từ Danh sách họp. Hệ thống đọc các cột Số, Ngày họp, Nội dung, Số người họp, Cuộc Họp, Khoảng thời gian họp, Phòng họp và Công khai.</p>
         {message && <div className={`alert alert-${message.type}`}>{message.text}</div>}
         <input type="file" accept=".xlsx,.xls" className="form-control mb-3" onChange={(event) => readFile(event.target.files?.[0])} />
         <div className="small text-muted mb-3">{fileName || "Chưa chọn file"}</div>
         {rows.length > 0 && <>
           <div className="table-responsive border rounded mb-3">
             <table className="table table-sm align-middle mb-0">
-              <thead><tr><th>Số</th><th>Ngày họp</th><th>Nội dung</th><th>Số người họp</th><th>Cuộc Họp</th><th>Khoảng thời gian họp</th><th>Phòng họp</th></tr></thead>
+              <thead><tr><th>Số</th><th>Ngày họp</th><th>Nội dung</th><th>Số người họp</th><th>Cuộc Họp</th><th>Khoảng thời gian họp</th><th>Phòng họp</th><th>Công khai</th></tr></thead>
               <tbody>{rows.slice(0, 20).map((row, index) => <tr key={index}>
                 <td>{row.number}</td><td>{row.meetingDate}</td><td>{row.content}</td><td>{row.attendeeCount}</td>
-                <td>{row.meetingType}</td><td>{row.meetingTimeRange}</td><td>{row.meetingRoom}</td>
+                <td>{row.meetingType}</td><td>{row.meetingTimeRange}</td><td>{row.meetingRoom}</td><td>{row.isPublic ? "Có" : "Không"}</td>
               </tr>)}</tbody>
             </table>
           </div>

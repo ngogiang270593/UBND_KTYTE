@@ -10,6 +10,7 @@ public class OfficeMeeting
     public int AttendeeCount { get; set; }
     public string? MeetingTimeRange { get; set; }
     public string? MeetingRoom { get; set; }
+    public bool IsPublic { get; set; }
     public string? AttachmentName { get; set; }
     public string? AttachmentPath { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

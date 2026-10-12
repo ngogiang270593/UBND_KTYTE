@@ -5,7 +5,7 @@ import TablePagination from "./TablePagination";
 import { useNotification } from "./NotificationProvider";
 
 const meetingTypes = ["Họp Trực Tuyến", "Họp Trực Tiếp", "Họp Chủ Tịch, Phó Chủ Tịch", "Họp Ủy Ban", "Họp Khác"];
-const emptyForm = { number: "", meetingDate: null, meetingType: meetingTypes[0], content: "", attendeeCount: "", meetingTimeRange: "", meetingRoom: "", attachment: null };
+const emptyForm = { number: "", meetingDate: null, meetingType: meetingTypes[0], content: "", attendeeCount: "", meetingTimeRange: "", meetingRoom: "", isPublic: false, attachment: null };
 const currentYear = new Date().getFullYear();
 const emptyFilters = { keyword: "", number: "", year: String(currentYear), quarter: "", content: "" };
 const allowedExtensions = new Set(["pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx", "jpg", "jpeg", "png", "txt", "zip"]);
@@ -211,6 +211,7 @@ export default function OfficeMeetingsPage({ profile }) {
       attendeeCount: String(meeting.attendeeCount),
       meetingTimeRange: meeting.meetingTimeRange || "",
       meetingRoom: meeting.meetingRoom || "",
+      isPublic: Boolean(meeting.isPublic),
       attachment: null,
     });
     setMeetingDateInput(meetingDate ? formatDateInput(meetingDate) : "");
@@ -249,6 +250,7 @@ export default function OfficeMeetingsPage({ profile }) {
     payload.append("AttendeeCount", form.attendeeCount);
     if (form.meetingTimeRange.trim()) payload.append("MeetingTimeRange", form.meetingTimeRange.trim());
     if (form.meetingRoom.trim()) payload.append("MeetingRoom", form.meetingRoom.trim());
+    payload.append("IsPublic", String(form.isPublic));
     if (form.attachment) payload.append("Attachment", form.attachment);
     if (editingMeeting) payload.append("RemoveAttachment", String(removeSavedAttachment));
 
@@ -380,7 +382,7 @@ export default function OfficeMeetingsPage({ profile }) {
           [sheetTitle],
           [`Xuất lúc: ${exportedAt} · ${sheetMeetings.length.toLocaleString("vi-VN")} cuộc họp · ${totalAttendees.toLocaleString("vi-VN")} người tham dự`],
           [],
-          ["Số", "Ngày nhập", "Nội dung", "Số người họp", "Khoảng thời gian họp", "Phòng họp"],
+          ["Số", "Ngày nhập", "Nội dung", "Số người họp", "Khoảng thời gian họp", "Phòng họp", "Công khai"],
           ...[...sheetMeetings].sort((first, second) =>
             String(second.meetingDate).localeCompare(String(first.meetingDate)) || second.id - first.id
           ).map((meeting) => [
@@ -390,18 +392,19 @@ export default function OfficeMeetingsPage({ profile }) {
             Number(meeting.attendeeCount || 0),
             meeting.meetingTimeRange || "",
             meeting.meetingRoom || "",
+            meeting.isPublic ? "Có" : "Không",
           ]),
-          ["TỔNG CỘNG", "", "", totalAttendees, "", ""],
+          ["TỔNG CỘNG", "", "", totalAttendees, "", "", ""],
         ];
         const totalRowIndex = rows.length - 1;
         const sheet = XLSX.utils.aoa_to_sheet(rows);
         sheet["!merges"] = [
-          { s: { r: 0, c: 0 }, e: { r: 0, c: 5 } },
-          { s: { r: 1, c: 0 }, e: { r: 1, c: 5 } },
+          { s: { r: 0, c: 0 }, e: { r: 0, c: 6 } },
+          { s: { r: 1, c: 0 }, e: { r: 1, c: 6 } },
           { s: { r: totalRowIndex, c: 0 }, e: { r: totalRowIndex, c: 2 } },
         ];
-        sheet["!cols"] = [{ wch: 16 }, { wch: 16 }, { wch: 60 }, { wch: 18 }, { wch: 26 }, { wch: 24 }];
-        sheet["!autofilter"] = { ref: `A4:F${4 + sheetMeetings.length}` };
+        sheet["!cols"] = [{ wch: 16 }, { wch: 16 }, { wch: 60 }, { wch: 18 }, { wch: 26 }, { wch: 24 }, { wch: 14 }];
+        sheet["!autofilter"] = { ref: `A4:G${4 + sheetMeetings.length}` };
         sheet["!rows"] = [
           { hpt: 30 },
           { hpt: 22 },
@@ -417,7 +420,7 @@ export default function OfficeMeetingsPage({ profile }) {
             alignment: { vertical: "center", horizontal: cell === "A1" ? "center" : "left" },
           };
         }
-        for (let column = 0; column < 6; column += 1) {
+        for (let column = 0; column < 7; column += 1) {
           const cell = XLSX.utils.encode_cell({ r: 3, c: column });
           if (sheet[cell]) sheet[cell].s = {
             font: { name: "Arial", bold: true, color: { rgb: "FFFFFF" } },
@@ -483,6 +486,7 @@ export default function OfficeMeetingsPage({ profile }) {
             <div>
               <h3 className="h5 fw-bold mb-1">{editingMeeting ? `Sửa cuộc họp số ${editingMeeting.number}` : "Nhập thông tin cuộc họp"}</h3>
               <p className="small text-muted mb-0">{editingMeeting ? "Cập nhật thông tin rồi chọn Lưu thay đổi." : "Điền thông tin bên dưới. Các trường có dấu * là bắt buộc."}</p>
+              <a className="small" href="/lich-hop" target="_blank" rel="noreferrer">Mở trang lịch họp công khai</a>
             </div>
           </div>
         </div>
@@ -537,6 +541,14 @@ export default function OfficeMeetingsPage({ profile }) {
                   <select id="office-meeting-room" className="form-select" value={form.meetingRoom} onChange={(event) => setForm({ ...form, meetingRoom: event.target.value })}>
                     <option value="">Chọn phòng họp</option>{meetingRooms.map((room) => <option key={room.id} value={room.name}>{room.name}</option>)}
                   </select>
+                </div>
+                <div className="col-lg-4 col-md-6 d-flex align-items-end">
+                  <div className="form-check form-switch mb-2">
+                    <input id="office-meeting-public" className="form-check-input" type="checkbox" role="switch"
+                      checked={form.isPublic} onChange={(event) => setForm((current) => ({ ...current, isPublic: event.target.checked }))} />
+                    <label htmlFor="office-meeting-public" className="form-check-label fw-semibold">Công khai cuộc họp</label>
+                    <div className="form-text">Chỉ ngày, giờ, nội dung, phòng và loại họp sẽ hiển thị công khai.</div>
+                  </div>
                 </div>
                 <div className="col-12">
                   <label htmlFor="office-meeting-content" className="form-label fw-semibold">Nội dung <span className="text-danger">*</span></label>
@@ -711,7 +723,7 @@ export default function OfficeMeetingsPage({ profile }) {
             <span className="spinner-border spinner-border-sm me-2" aria-hidden="true" />Đang tải danh sách...
           </div> : <div className="table-responsive">
             <table className="table table-hover align-middle mb-0">
-              <thead className="table-light"><tr><th rowSpan="2" className="text-center" style={{ width: 70 }}>STT</th><th rowSpan="2" className="text-center" style={{ minWidth: 460 }}>Thông tin chung</th><th rowSpan="2">Nội dung</th></tr></thead><tbody>{visibleMeetings.map((meeting, index) => (<tr key={meeting.id}><td className="text-center fw-semibold">{(currentPage - 1) * pageSize + index + 1}</td><td><div className="row g-2"><div className="col-md-6"><strong>Số:</strong> {meeting.number}<br/><strong>Ngày họp:</strong> {formatDate(meeting.meetingDate)}{meeting.meetingTimeRange && <><br/><strong>Giờ họp:</strong> {meeting.meetingTimeRange}</>}{meeting.meetingRoom && <><br/><strong>Phòng họp:</strong> {meeting.meetingRoom}</>}</div><div className="col-md-6"><strong>Số người họp:</strong> {Number(meeting.attendeeCount).toLocaleString("vi-VN")}<br/>{meeting.attachmentName && <button type="button" className="btn btn-link p-1" title={meeting.attachmentName} onClick={() => downloadMeetingAttachment(meeting)}>{downloadingId === meeting.id ? <span className="spinner-border spinner-border-sm" /> : <FileTypeIcon fileName={meeting.attachmentName} />}</button>}<div className="mt-1"><button type="button" className="btn btn-outline-primary btn-sm me-1" onClick={() => startEditingMeeting(meeting)}>Sửa</button><button type="button" className="btn btn-outline-danger btn-sm" onClick={() => deleteMeeting(meeting)}>Xóa</button></div></div></div></td><td style={{ minWidth: 280, whiteSpace: "pre-wrap" }}>{meeting.content}</td></tr>))}{!visibleMeetings.length && <tr><td colSpan="3" className="text-center py-5">Chưa có cuộc họp phù hợp</td></tr>}</tbody>
+              <thead className="table-light"><tr><th rowSpan="2" className="text-center" style={{ width: 70 }}>STT</th><th rowSpan="2" className="text-center" style={{ minWidth: 460 }}>Thông tin chung</th><th rowSpan="2">Nội dung</th></tr></thead><tbody>{visibleMeetings.map((meeting, index) => (<tr key={meeting.id}><td className="text-center fw-semibold">{(currentPage - 1) * pageSize + index + 1}</td><td><div className="row g-2"><div className="col-md-6"><strong>Số:</strong> {meeting.number}<br/><strong>Ngày họp:</strong> {formatDate(meeting.meetingDate)}{meeting.meetingTimeRange && <><br/><strong>Giờ họp:</strong> {meeting.meetingTimeRange}</>}{meeting.meetingRoom && <><br/><strong>Phòng họp:</strong> {meeting.meetingRoom}</>}<br/><span className={`badge ${meeting.isPublic ? "text-bg-success" : "text-bg-secondary"}`}>{meeting.isPublic ? "Công khai" : "Nội bộ"}</span></div><div className="col-md-6"><strong>Số người họp:</strong> {Number(meeting.attendeeCount).toLocaleString("vi-VN")}<br/>{meeting.attachmentName && <button type="button" className="btn btn-link p-1" title={meeting.attachmentName} onClick={() => downloadMeetingAttachment(meeting)}>{downloadingId === meeting.id ? <span className="spinner-border spinner-border-sm" /> : <FileTypeIcon fileName={meeting.attachmentName} />}</button>}<div className="mt-1"><button type="button" className="btn btn-outline-primary btn-sm me-1" onClick={() => startEditingMeeting(meeting)}>Sửa</button><button type="button" className="btn btn-outline-danger btn-sm" onClick={() => deleteMeeting(meeting)}>Xóa</button></div></div></div></td><td style={{ minWidth: 280, whiteSpace: "pre-wrap" }}>{meeting.content}</td></tr>))}{!visibleMeetings.length && <tr><td colSpan="3" className="text-center py-5">Chưa có cuộc họp phù hợp</td></tr>}</tbody>
             </table>
           </div>}
 

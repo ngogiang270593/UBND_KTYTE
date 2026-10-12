@@ -45,6 +45,7 @@ import OfficeMeetingListPage from "./OfficeMeetingListPage";
 import OfficeMeetingImportPage from "./OfficeMeetingImportPage";
 import OfficeMeetingCalendarPage from "./OfficeMeetingCalendarPage";
 import OfficeMeetingSyncPage from "./OfficeMeetingSyncPage";
+import PublicOfficeMeetingSchedulePage from "./PublicOfficeMeetingSchedulePage";
 import NationwideHealthStatisticsPage from "./NationwideHealthStatisticsPage";
 import { appModules, findModuleByPage } from "./navigationConfig";
 import api from "./api";
@@ -78,6 +79,10 @@ function App() {
     const interval = window.setInterval(refreshAccess, 30000);
     return () => { cancelled = true; window.removeEventListener("focus", refreshAccess); window.clearInterval(interval); };
   }, [token, accessRetry]);
+
+  if (window.location.pathname.replace(/\/+$/, "") === "/lich-hop") {
+    return <PublicOfficeMeetingSchedulePage />;
+  }
 
   const logout = () => {
     sessionStorage.clear();

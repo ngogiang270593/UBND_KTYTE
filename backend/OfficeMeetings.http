@@ -1,6 +1,9 @@
 @baseUrl = http://localhost:5022
 @token = replace-with-access-token
 
+### List public meetings for a date (anonymous, only public fields)
+GET {{baseUrl}}/api/PublicOfficeMeetings?date=2026-10-12
+
 ### List online meetings
 GET {{baseUrl}}/api/OfficeMeetings
 Authorization: Bearer {{token}}
