@@ -380,7 +380,7 @@ export default function OfficeMeetingsPage({ profile }) {
           [sheetTitle],
           [`Xuất lúc: ${exportedAt} · ${sheetMeetings.length.toLocaleString("vi-VN")} cuộc họp · ${totalAttendees.toLocaleString("vi-VN")} người tham dự`],
           [],
-          ["Số", "Ngày nhập", "Nội dung", "Số người họp"],
+          ["Số", "Ngày nhập", "Nội dung", "Số người họp", "Khoảng thời gian họp", "Phòng họp"],
           ...[...sheetMeetings].sort((first, second) =>
             String(second.meetingDate).localeCompare(String(first.meetingDate)) || second.id - first.id
           ).map((meeting) => [
@@ -388,18 +388,20 @@ export default function OfficeMeetingsPage({ profile }) {
             formatDate(meeting.meetingDate),
             meeting.content,
             Number(meeting.attendeeCount || 0),
+            meeting.meetingTimeRange || "",
+            meeting.meetingRoom || "",
           ]),
-          ["TỔNG CỘNG", "", "", totalAttendees],
+          ["TỔNG CỘNG", "", "", totalAttendees, "", ""],
         ];
         const totalRowIndex = rows.length - 1;
         const sheet = XLSX.utils.aoa_to_sheet(rows);
         sheet["!merges"] = [
-          { s: { r: 0, c: 0 }, e: { r: 0, c: 3 } },
-          { s: { r: 1, c: 0 }, e: { r: 1, c: 3 } },
+          { s: { r: 0, c: 0 }, e: { r: 0, c: 5 } },
+          { s: { r: 1, c: 0 }, e: { r: 1, c: 5 } },
           { s: { r: totalRowIndex, c: 0 }, e: { r: totalRowIndex, c: 2 } },
         ];
-        sheet["!cols"] = [{ wch: 16 }, { wch: 16 }, { wch: 60 }, { wch: 18 }];
-        sheet["!autofilter"] = { ref: `A4:D${4 + sheetMeetings.length}` };
+        sheet["!cols"] = [{ wch: 16 }, { wch: 16 }, { wch: 60 }, { wch: 18 }, { wch: 26 }, { wch: 24 }];
+        sheet["!autofilter"] = { ref: `A4:F${4 + sheetMeetings.length}` };
         sheet["!rows"] = [
           { hpt: 30 },
           { hpt: 22 },
@@ -415,7 +417,7 @@ export default function OfficeMeetingsPage({ profile }) {
             alignment: { vertical: "center", horizontal: cell === "A1" ? "center" : "left" },
           };
         }
-        for (let column = 0; column < 4; column += 1) {
+        for (let column = 0; column < 6; column += 1) {
           const cell = XLSX.utils.encode_cell({ r: 3, c: column });
           if (sheet[cell]) sheet[cell].s = {
             font: { name: "Arial", bold: true, color: { rgb: "FFFFFF" } },

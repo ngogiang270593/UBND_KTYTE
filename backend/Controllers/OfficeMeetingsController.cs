@@ -42,7 +42,17 @@ public sealed class OfficeMeetingsController(AppDbContext db, ILogger<OfficeMeet
             if (!DateTime.TryParseExact(item.MeetingDate, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var date)) continue;
             var key = $"{(item.Number ?? "").Trim()}|{date:yyyy-MM-dd}";
             if (string.IsNullOrWhiteSpace(item.Number) || string.IsNullOrWhiteSpace(item.Content) || !keys.Add(key)) continue;
-            db.OfficeMeetings.Add(new OfficeMeeting { Number = item.Number.Trim(), MeetingDate = EnsureUtc(date.Date), MeetingType = (item.MeetingType ?? "").Trim(), Content = item.Content.Trim(), AttendeeCount = Math.Max(1, item.AttendeeCount), CreatedAt = DateTime.UtcNow });
+            db.OfficeMeetings.Add(new OfficeMeeting
+            {
+                Number = item.Number.Trim(),
+                MeetingDate = EnsureUtc(date.Date),
+                MeetingType = (item.MeetingType ?? "").Trim(),
+                Content = item.Content.Trim(),
+                AttendeeCount = Math.Max(1, item.AttendeeCount),
+                MeetingTimeRange = string.IsNullOrWhiteSpace(item.MeetingTimeRange) ? null : item.MeetingTimeRange.Trim(),
+                MeetingRoom = string.IsNullOrWhiteSpace(item.MeetingRoom) ? null : item.MeetingRoom.Trim(),
+                CreatedAt = DateTime.UtcNow
+            });
             added++;
         }
         await db.SaveChangesAsync(cancellationToken);
@@ -425,4 +435,11 @@ public sealed record OfficeMeetingResponse(
     string? MeetingTimeRange,
     string? MeetingRoom);
 
-public sealed record OfficeMeetingSyncItem(string Number, string MeetingDate, string MeetingType, string Content, int AttendeeCount);
+public sealed record OfficeMeetingSyncItem(
+    string Number,
+    string MeetingDate,
+    string MeetingType,
+    string Content,
+    int AttendeeCount,
+    string? MeetingTimeRange = null,
+    string? MeetingRoom = null);
