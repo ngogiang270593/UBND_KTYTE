@@ -37,6 +37,13 @@ const formatMeetingDate = (value) => {
   return match ? `${match[3]}/${match[2]}/${match[1]}` : "";
 };
 
+const formatMeetingWeekday = (value) => {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(value || ""));
+  if (!match) return "";
+  const date = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+  return new Intl.DateTimeFormat("vi-VN", { weekday: "long" }).format(date);
+};
+
 const getMeetingTypeColor = (value) => {
   const text = String(value || "Khác");
   let hash = 0;
@@ -241,7 +248,7 @@ export default function PublicOfficeMeetingSchedulePage() {
                       <div className="public-meeting-date-time">
                         <span className="public-meeting-order">{String(index + 1).padStart(2, "0")}</span>
                         <div>
-                          <div className="public-meeting-date">{formatMeetingDate(meeting.meetingDate)}</div>
+                          <div className="public-meeting-date">{formatMeetingWeekday(meeting.meetingDate)}, {formatMeetingDate(meeting.meetingDate)}</div>
                           <div className="public-meeting-time">{meeting.meetingTimeRange?.trim() || "Cả ngày"}</div>
                         </div>
                       </div>
