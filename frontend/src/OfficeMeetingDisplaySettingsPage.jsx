@@ -6,12 +6,14 @@ const scrollOptions = [20, 30, 45, 60, 90];
 const displayPeriodOptions = [
   { value: "day", label: "Ngày hiện tại" },
   { value: "week", label: "Tuần hiện tại (Thứ Hai – Chủ nhật)" },
+  { value: "todayToWeekend", label: "Hôm nay đến Cuối tuần" },
 ];
 const fontOptions = ["Times New Roman", "Arial", "Tahoma", "Georgia", "Verdana"];
 const fontSizeOptions = [10, 11, 12, 13, 14, 16, 18, 20, 22, 24, 28, 32, 36];
 const initialSettings = {
   refreshSeconds: 15,
   scrollSeconds: 45,
+  titleText: "Lịch Họp - UBND xã Tân Hòa",
   titleFont: "Times New Roman",
   meetingFont: "Times New Roman",
   titleFontSizePt: 14,
@@ -45,6 +47,7 @@ export default function OfficeMeetingDisplaySettingsPage() {
         if (active) setSettings({
           refreshSeconds: data.refreshSeconds,
           scrollSeconds: data.scrollSeconds,
+          titleText: data.titleText,
           titleFont: data.titleFont,
           meetingFont: data.meetingFont,
           titleFontSizePt: data.titleFontSizePt,
@@ -89,6 +92,7 @@ export default function OfficeMeetingDisplaySettingsPage() {
       setSettings({
         refreshSeconds: data.refreshSeconds,
         scrollSeconds: data.scrollSeconds,
+        titleText: data.titleText,
         titleFont: data.titleFont,
         meetingFont: data.meetingFont,
         titleFontSizePt: data.titleFontSizePt,
@@ -189,6 +193,12 @@ export default function OfficeMeetingDisplaySettingsPage() {
           <fieldset disabled={loading || saving}>
             <div className="row g-3">
               <div className="col-md-6">
+                <label className="form-label fw-semibold" htmlFor="office-display-title-text">Tiêu đề lịch họp</label>
+                <input id="office-display-title-text" className="form-control" maxLength={200} value={settings.titleText}
+                  onChange={(event) => setSettings((current) => ({ ...current, titleText: event.target.value }))} />
+                <div className="form-text">Nội dung hiển thị ở đầu màn hình lịch họp công khai.</div>
+              </div>
+              <div className="col-md-6">
                 <label className="form-label fw-semibold" htmlFor="office-display-refresh">Thời gian tự động cập nhật</label>
                 <select id="office-display-refresh" className="form-select" value={settings.refreshSeconds}
                   onChange={(event) => setSettings((current) => ({ ...current, refreshSeconds: Number(event.target.value) }))}>
@@ -210,7 +220,7 @@ export default function OfficeMeetingDisplaySettingsPage() {
                   onChange={(event) => setSettings((current) => ({ ...current, displayPeriod: event.target.value }))}>
                   {displayPeriodOptions.map((period) => <option key={period.value} value={period.value}>{period.label}</option>)}
                 </select>
-                <div className="form-text">Chọn hiển thị các cuộc họp công khai của ngày hiện tại hoặc cả tuần.</div>
+                <div className="form-text">Chọn phạm vi ngày bắt đầu hiển thị lịch họp công khai.</div>
               </div>
               <div className="col-md-6">
                 <label className="form-label fw-semibold" htmlFor="office-display-title-font">Phông chữ tiêu đề</label>

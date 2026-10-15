@@ -20,6 +20,7 @@ public sealed class PublicOfficeMeetingsController(AppDbContext db) : Controller
             .Select(item => new PublicMeetingDisplaySettingsResponse(
                 item.RefreshSeconds,
                 item.ScrollSeconds,
+                item.TitleText,
                 item.TitleFont,
                 item.MeetingFont,
                 item.TitleFontSizePt,
@@ -63,7 +64,7 @@ public sealed class PublicOfficeMeetingsController(AppDbContext db) : Controller
             return BadRequest(new { message = "Ngày cần xem không hợp lệ." });
         }
 
-        if (period is not ("day" or "week"))
+        if (period is not ("day" or "week" or "todayToWeekend"))
             return BadRequest(new { message = "Phạm vi lịch họp không hợp lệ." });
 
         var firstDay = meetingDay.Date;
@@ -73,7 +74,12 @@ public sealed class PublicOfficeMeetingsController(AppDbContext db) : Controller
             firstDay = firstDay.AddDays(-daysSinceMonday);
         }
         var start = DateTime.SpecifyKind(firstDay, DateTimeKind.Utc);
-        var end = start.AddDays(period == "week" ? 7 : 1);
+        var end = start.AddDays(period switch
+        {
+            "week" => 7,
+            "todayToWeekend" => 7 - (int)meetingDay.DayOfWeek,
+            _ => 1,
+        });
         var meetings = await db.OfficeMeetings.AsNoTracking()
             .Where(meeting => meeting.IsPublic && meeting.MeetingDate >= start && meeting.MeetingDate < end)
             .OrderBy(meeting => meeting.MeetingDate)
@@ -101,6 +107,7 @@ public sealed record PublicOfficeMeetingResponse(
 public sealed record PublicMeetingDisplaySettingsResponse(
     int RefreshSeconds,
     int ScrollSeconds,
+    string TitleText,
     string TitleFont,
     string MeetingFont,
     int TitleFontSizePt,

@@ -25,6 +25,7 @@ public sealed class OfficeMeetingDisplaySettingsController(AppDbContext db) : Co
             .Select(item => new MeetingDisplaySettingsResponse(
                 item.RefreshSeconds,
                 item.ScrollSeconds,
+                item.TitleText,
                 item.TitleFont,
                 item.MeetingFont,
                 item.TitleFontSizePt,
@@ -42,7 +43,8 @@ public sealed class OfficeMeetingDisplaySettingsController(AppDbContext db) : Co
     {
         if (!RefreshOptions.Contains(request.RefreshSeconds)
             || !ScrollOptions.Contains(request.ScrollSeconds)
-            || request.DisplayPeriod is not ("day" or "week")
+            || string.IsNullOrWhiteSpace(request.TitleText) || request.TitleText.Length > 200
+            || request.DisplayPeriod is not ("day" or "week" or "todayToWeekend")
             || !FontOptions.Contains(request.TitleFont, StringComparer.Ordinal)
             || !FontOptions.Contains(request.MeetingFont, StringComparer.Ordinal)
             || !FontSizeOptions.Contains(request.TitleFontSizePt)
@@ -53,6 +55,7 @@ public sealed class OfficeMeetingDisplaySettingsController(AppDbContext db) : Co
             .SingleAsync(item => item.Id == 1, cancellationToken);
         settings.RefreshSeconds = request.RefreshSeconds;
         settings.ScrollSeconds = request.ScrollSeconds;
+        settings.TitleText = request.TitleText.Trim();
         settings.TitleFont = request.TitleFont;
         settings.MeetingFont = request.MeetingFont;
         settings.TitleFontSizePt = request.TitleFontSizePt;
@@ -102,6 +105,7 @@ public sealed class OfficeMeetingDisplaySettingsController(AppDbContext db) : Co
         new(
             settings.RefreshSeconds,
             settings.ScrollSeconds,
+            settings.TitleText,
             settings.TitleFont,
             settings.MeetingFont,
             settings.TitleFontSizePt,
@@ -128,6 +132,7 @@ public sealed class OfficeMeetingDisplaySettingsController(AppDbContext db) : Co
 public sealed record UpdateMeetingDisplaySettingsRequest(
     int RefreshSeconds,
     int ScrollSeconds,
+    string TitleText,
     string TitleFont,
     string MeetingFont,
     int TitleFontSizePt,
@@ -137,6 +142,7 @@ public sealed record UpdateMeetingDisplaySettingsRequest(
 public sealed record MeetingDisplaySettingsResponse(
     int RefreshSeconds,
     int ScrollSeconds,
+    string TitleText,
     string TitleFont,
     string MeetingFont,
     int TitleFontSizePt,

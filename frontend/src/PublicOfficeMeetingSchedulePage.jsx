@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import api from "./api";
 import backgroundImage from "./assets/public-meeting-background.jpg";
 
-const defaultSettings = { refreshSeconds: 15, scrollSeconds: 45, displayPeriod: "day" };
+const defaultSettings = { refreshSeconds: 15, scrollSeconds: 45, titleText: "Lịch Họp - UBND xã Tân Hòa", displayPeriod: "day" };
 const validRefreshSeconds = [5, 10, 15, 30, 60];
 const validScrollSeconds = [20, 30, 45, 60, 90];
 const fontOptions = ["Times New Roman", "Arial", "Tahoma", "Georgia", "Verdana"];
@@ -77,9 +77,9 @@ export default function PublicOfficeMeetingSchedulePage() {
 
   useEffect(() => {
     const previousTitle = document.title;
-    document.title = "Lịch Họp - UBND xã Tân Hòa";
+    document.title = settings.titleText;
     return () => { document.title = previousTitle; };
-  }, []);
+  }, [settings.titleText]);
 
   useEffect(() => {
     const clock = window.setInterval(() => setNow(new Date()), 15000);
@@ -162,15 +162,17 @@ export default function PublicOfficeMeetingSchedulePage() {
         const next = {
           refreshSeconds: validRefreshSeconds.includes(Number(data.refreshSeconds)) ? Number(data.refreshSeconds) : defaultSettings.refreshSeconds,
           scrollSeconds: validScrollSeconds.includes(Number(data.scrollSeconds)) ? Number(data.scrollSeconds) : defaultSettings.scrollSeconds,
+          titleText: String(data.titleText || defaultSettings.titleText).trim() || defaultSettings.titleText,
           titleFont: fontOptions.includes(data.titleFont) ? data.titleFont : defaultFont,
           meetingFont: fontOptions.includes(data.meetingFont) ? data.meetingFont : defaultFont,
           titleFontSizePt: fontSizeOptions.includes(Number(data.titleFontSizePt)) ? Number(data.titleFontSizePt) : 14,
           meetingFontSizePt: fontSizeOptions.includes(Number(data.meetingFontSizePt)) ? Number(data.meetingFontSizePt) : 13,
-          displayPeriod: data.displayPeriod === "week" ? "week" : "day",
+          displayPeriod: ["week", "todayToWeekend"].includes(data.displayPeriod) ? data.displayPeriod : "day",
         };
         setSettings((current) => current.refreshSeconds === next.refreshSeconds && current.scrollSeconds === next.scrollSeconds
           && current.titleFont === next.titleFont && current.meetingFont === next.meetingFont
           && current.titleFontSizePt === next.titleFontSizePt && current.meetingFontSizePt === next.meetingFontSizePt
+          && current.titleText === next.titleText
           && current.displayPeriod === next.displayPeriod
           ? current
           : next);
@@ -222,11 +224,11 @@ export default function PublicOfficeMeetingSchedulePage() {
     `}</style>
     <div className="public-meeting-shell" style={{
       "--title-font": settings.titleFont,
-      "--meeting-font": settings.meetingFont,
       "--title-font-size": `${settings.titleFontSizePt}pt`,
+      "--meeting-font": settings.meetingFont,
       "--meeting-font-size": `${settings.meetingFontSizePt}pt`,
     }}>
-      <h1 className="public-meeting-title">Lịch Họp - UBND xã Tân Hòa</h1>
+      <h1 className="public-meeting-title">{settings.titleText}</h1>
       <section className="public-meeting-board" aria-label="Lịch họp công khai trong ngày">
         {settingsError && <p className="public-meeting-settings-error" role="status">Đang dùng cấu hình mặc định; chưa tải được cấu hình lịch họp.</p>}
         {backgroundError && <p className="public-meeting-settings-error" role="status">Không tải được ảnh nền tùy chỉnh; đang dùng nền mặc định.</p>}

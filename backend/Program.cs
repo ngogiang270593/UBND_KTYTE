@@ -161,6 +161,7 @@ using (var scope = app.Services.CreateScope())
             ALTER TABLE "OfficeMeetings" ADD COLUMN IF NOT EXISTS "MeetingRoom" text NULL;
             ALTER TABLE "OfficeMeetings" ADD COLUMN IF NOT EXISTS "IsPublic" boolean NOT NULL DEFAULT FALSE;
             ALTER TABLE "OfficeMeetingDisplaySettings" ADD COLUMN IF NOT EXISTS "TitleFont" text NOT NULL DEFAULT 'Times New Roman';
+            ALTER TABLE "OfficeMeetingDisplaySettings" ADD COLUMN IF NOT EXISTS "TitleText" text NOT NULL DEFAULT 'Lịch Họp - UBND xã Tân Hòa';
             ALTER TABLE "OfficeMeetingDisplaySettings" ADD COLUMN IF NOT EXISTS "MeetingFont" text NOT NULL DEFAULT 'Times New Roman';
             ALTER TABLE "OfficeMeetingDisplaySettings" ADD COLUMN IF NOT EXISTS "TitleFontSizePt" integer NOT NULL DEFAULT 14;
             ALTER TABLE "OfficeMeetingDisplaySettings" ADD COLUMN IF NOT EXISTS "MeetingFontSizePt" integer NOT NULL DEFAULT 13;
@@ -584,6 +585,7 @@ using (var scope = app.Services.CreateScope())
                 Id INTEGER NOT NULL PRIMARY KEY CHECK (Id = 1),
                 RefreshSeconds INTEGER NOT NULL DEFAULT 15,
                 ScrollSeconds INTEGER NOT NULL DEFAULT 45,
+                TitleText TEXT NOT NULL DEFAULT 'Lịch Họp - UBND xã Tân Hòa',
                 TitleFont TEXT NOT NULL DEFAULT 'Times New Roman',
                 MeetingFont TEXT NOT NULL DEFAULT 'Times New Roman',
                 TitleFontSizePt INTEGER NOT NULL DEFAULT 14,
@@ -602,6 +604,8 @@ using (var scope = app.Services.CreateScope())
         db.Database.CloseConnection();
         if (!settingsColumns.Contains("TitleFont"))
             db.Database.ExecuteSqlRaw("ALTER TABLE OfficeMeetingDisplaySettings ADD COLUMN TitleFont TEXT NOT NULL DEFAULT 'Times New Roman';");
+        if (!settingsColumns.Contains("TitleText"))
+            db.Database.ExecuteSqlRaw("ALTER TABLE OfficeMeetingDisplaySettings ADD COLUMN TitleText TEXT NOT NULL DEFAULT 'Lịch Họp - UBND xã Tân Hòa';");
         if (!settingsColumns.Contains("MeetingFont"))
             db.Database.ExecuteSqlRaw("ALTER TABLE OfficeMeetingDisplaySettings ADD COLUMN MeetingFont TEXT NOT NULL DEFAULT 'Times New Roman';");
         if (!settingsColumns.Contains("TitleFontSizePt"))

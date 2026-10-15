@@ -5,6 +5,7 @@ public sealed class OfficeMeetingDisplaySettings
     public int Id { get; set; } = 1;
     public int RefreshSeconds { get; set; } = 15;
     public int ScrollSeconds { get; set; } = 45;
+    public string TitleText { get; set; } = "Lịch Họp - UBND xã Tân Hòa";
     public string TitleFont { get; set; } = "Times New Roman";
     public string MeetingFont { get; set; } = "Times New Roman";
     public int TitleFontSizePt { get; set; } = 14;
