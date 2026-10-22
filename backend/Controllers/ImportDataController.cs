@@ -8,6 +8,7 @@ namespace backend.Controllers
 {
     public class CustomerImportRequest
     {
+        public bool Update { get; set; }
         public int? ExcelLine { get; set; }
 
         public string? Code { get; set; }
@@ -102,6 +103,8 @@ namespace backend.Controllers
                 StringComparer.OrdinalIgnoreCase
             );
 
+            var existingCustomersByCode = await _context.Customers.Where(x => x.Code != null && x.Code != "").ToDictionaryAsync(x => NormalizeCitizenCode(x.Code), StringComparer.OrdinalIgnoreCase);
+
             var importCodeSet = new HashSet<string>(
                 StringComparer.OrdinalIgnoreCase
             );
@@ -130,6 +133,7 @@ namespace backend.Controllers
             );
 
             var validCustomers = new List<Customer>();
+            var updatedCount = 0;
             var savedLines = new List<int>();
             var errors = new List<string>();
 
@@ -195,7 +199,7 @@ namespace backend.Controllers
 
                 if (!string.IsNullOrWhiteSpace(code))
                 {
-                    if (existingCodeSet.Contains(code))
+                    if (existingCodeSet.Contains(code) && !row.Update)
                     {
                         rowErrors.Add("Căn cước đã tồn tại trong hệ thống");
                     }
@@ -243,6 +247,12 @@ namespace backend.Controllers
                         $"Dòng {excelLine}: {string.Join("; ", rowErrors)}."
                     );
                     continue;
+                }
+
+                if (row.Update && !string.IsNullOrWhiteSpace(code) && existingCustomersByCode.TryGetValue(code, out var existingCustomer))
+                {
+                    existingCustomer.Name = name; existingCustomer.ObjectType = objectType; existingCustomer.PhoneNumber = phoneNumber; existingCustomer.LegacyPhone = phoneNumber; existingCustomer.TaxCode = birthYear; existingCustomer.BirthDate = birthDate.HasValue ? DateTime.SpecifyKind(birthDate.Value.Date, DateTimeKind.Utc) : null; existingCustomer.ExaminationDate = DateTime.SpecifyKind(row.ExaminationDate!.Value.Date, DateTimeKind.Utc); existingCustomer.ExaminationPlace = examinationPlace; existingCustomer.Address = address; existingCustomer.Occupation = occupation;
+                    updatedCount++; savedLines.Add(excelLine); continue;
                 }
 
                 validCustomers.Add(new Customer
@@ -307,6 +317,7 @@ namespace backend.Controllers
 
                 totalCount = rows.Count,
                 savedCount = validCustomers.Count,
+                updatedCount,
                 savedLines,
                 errorCount = errors.Count,
                 errors

@@ -12,6 +12,7 @@ function ImportDataPage() {
   const [fileName, setFileName] = useState("");
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
+  const [updateExisting, setUpdateExisting] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
   const [clearingAll, setClearingAll] = useState(false);
   const [searchForm, setSearchForm] = useState({
@@ -563,8 +564,10 @@ function ImportDataPage() {
       const invalidCount = sortedRows.length - validCount;
 
       setMessage(
-        `Đã đọc ${sortedRows.length} dòng từ file Excel.\n` +
-          `Hợp lệ: ${validCount} dòng.\n` +
+        `Đã đọc ${sortedRows.length} dòng từ file Excel.
+` +
+          `Hợp lệ: ${validCount} dòng.
+` +
           `Có lỗi: ${invalidCount} dòng.`
       );
     } catch (error) {
@@ -589,6 +592,7 @@ function ImportDataPage() {
 
     try {
       const payload = rows.map((row) => ({
+        update: updateExisting,
         excelLine: row.excelLine,
         code: row.code,
         name: row.name,
@@ -608,12 +612,13 @@ function ImportDataPage() {
       const data = res.data;
 
       setMessage(
-        `${data.message}\n` +
-          `Tổng số dòng: ${data.totalCount || 0}\n` +
-          `Đã lưu: ${data.savedCount || 0}\n` +
-          `Dòng đã lưu: ${data.savedLines?.join(", ") || "Không có"}\n` +
-          `Dòng lỗi: ${data.errorCount || 0}\n` +
-          `${data.errors?.join("\n") || ""}`
+        String(data.message || "") + "\n" +
+        "Tổng số dòng: " + (data.totalCount || 0) + "\n" +
+        "Đã lưu: " + (data.savedCount || 0) + "\n" +
+        "Đã cập nhật: " + (data.updatedCount || 0) + "\n" +
+        "Dòng đã lưu: " + (data.savedLines?.join(", ") || "Không có") + "\n" +
+        "Dòng lỗi: " + (data.errorCount || 0) + "\n" +
+        (data.errors?.join("\n") || "")
       );
 
       await loadSavedRows();
@@ -639,7 +644,10 @@ function ImportDataPage() {
   const deleteOne = async (row) => {
     const confirmed = await confirm({
       title: "Xóa dữ liệu khám sức khỏe?",
-      message: `Xóa dữ liệu của "${row.name}"?\nCăn cước: ${row.code}\n\nThao tác này không thể hoàn tác.`,
+      message: `Xóa dữ liệu của "${row.name}"?
+Căn cước: ${row.code}
+
+Thao tác này không thể hoàn tác.`,
       confirmText: "Xóa dữ liệu",
     });
 
@@ -676,7 +684,9 @@ function ImportDataPage() {
 
     const confirmed = await confirm({
       title: "Xóa toàn bộ dữ liệu?",
-      message: `Bạn sắp xóa toàn bộ ${savedRows.length} dòng dữ liệu khám sức khỏe.\n\nDữ liệu sau khi xóa không thể khôi phục.`,
+      message: `Bạn sắp xóa toàn bộ ${savedRows.length} dòng dữ liệu khám sức khỏe.
+
+Dữ liệu sau khi xóa không thể khôi phục.`,
       confirmText: "Xóa toàn bộ",
     });
 
@@ -696,7 +706,8 @@ function ImportDataPage() {
       setSavedRows(Array.isArray(verifyRes.data) ? verifyRes.data : []);
 
       setMessage(
-        `${res.data?.message || "Đã xóa toàn bộ dữ liệu."}\n` +
+        `${res.data?.message || "Đã xóa toàn bộ dữ liệu."}
+` +
           `Số dòng đã xóa: ${res.data?.count || 0}.`
       );
     } catch (error) {
@@ -817,6 +828,11 @@ function ImportDataPage() {
                 </div>
 
                 <div className="col-lg-5">
+                  <div className="form-check mb-2">
+                    <input className="form-check-input" type="checkbox" id="update-existing" checked={updateExisting} onChange={(event) => setUpdateExisting(event.target.checked)} />
+                    <label className="form-check-label fw-semibold" htmlFor="update-existing">Update</label>
+                    <div className="form-text">Trùng căn cước sẽ cập nhật hồ sơ; dữ liệu mới vẫn được thêm.</div>
+                  </div>
                   <div className="d-flex gap-2 justify-content-lg-end">
                     <button
                       type="button"
